@@ -26,6 +26,16 @@
     return d.innerHTML;
   }
 
+  function setHTML(el, html) {
+    // Only touch the DOM when the content actually changed: replacing
+    // innerHTML restarts every row's lapIn animation, and doing that on each
+    // 5s poll made the whole board visibly "reload". Now the animation only
+    // plays when a lap or name really arrives.
+    if (el.__lastHTML === html) return;
+    el.__lastHTML = html;
+    el.innerHTML = html;
+  }
+
   function gap(ms, bestMs) {
     if (ms === bestMs) return '';
     return '+' + ((ms - bestMs) / 1000).toFixed(3);
@@ -51,7 +61,7 @@
     empty.hidden = board.length > 0;
     var bestMs = board.length ? board[0].lap_ms : 0;
     var inhouse = cfg.kind === 'inhouse';
-    rows.innerHTML = board.slice(0, 20).map(function (lap) {
+    setHTML(rows, board.slice(0, 20).map(function (lap) {
       var who = inhouse
         ? '<span class="b-row__who"><span class="b-row__name">' +
           esc(lap.driver_name) + '</span><span class="b-row__chips">' +
@@ -65,13 +75,13 @@
         '<span class="b-row__gap">' + gap(lap.lap_ms, bestMs) + '</span>' +
         '<span class="b-row__time">' + esc(lap.lap_time) + '</span>' +
         '</li>';
-    }).join('');
+    }).join(''));
   }
 
   function renderRecent() {
     var ul = document.getElementById('recent-rows');
     var inhouse = cfg.kind === 'inhouse';
-    ul.innerHTML = (state.recent || []).slice(0, inhouse ? 6 : 8).map(function (lap) {
+    setHTML(ul, (state.recent || []).slice(0, inhouse ? 6 : 8).map(function (lap) {
       var pending = !lap.driver_name && lap.valid;
       var name = lap.driver_name ? esc(lap.driver_name) : 'waiting for name…';
       var flag = !lap.valid
@@ -80,7 +90,7 @@
       return '<li class="' + (pending ? 'is-pending' : '') + '">' +
         '<span class="b-recent__time">' + esc(lap.lap_time) + '</span>' +
         '<span class="b-recent__name"><span>' + name + '</span>' + flag + '</span></li>';
-    }).join('');
+    }).join(''));
   }
 
   function renderMeta() {
@@ -104,18 +114,17 @@
                cell('Laps today', stats.laps_today != null ? stats.laps_today : '–'),
                cell('Drivers', stats.drivers != null ? stats.drivers : '–')];
     }
-    box.innerHTML = cells.join('');
+    setHTML(box, cells.join(''));
   }
 
   function renderCars() {
     var sel = document.getElementById('car-filter');
     if (!sel) return;
     var cars = state.cars || [];
-    var options = '<option value="">All cars</option>' + cars.map(function (c) {
+    setHTML(sel, '<option value="">All cars</option>' + cars.map(function (c) {
       return '<option value="' + esc(c) + '"' +
         (c === carFilter ? ' selected' : '') + '>' + esc(c) + '</option>';
-    }).join('');
-    if (sel.innerHTML !== options) sel.innerHTML = options;
+    }).join(''));
   }
 
   function renderDriverNames() {
@@ -124,9 +133,9 @@
     var names = {};
     (state.leaderboard || []).forEach(function (l) { names[l.driver_name] = 1; });
     (state.recent || []).forEach(function (l) { if (l.driver_name) names[l.driver_name] = 1; });
-    dl.innerHTML = Object.keys(names).sort().map(function (n) {
+    setHTML(dl, Object.keys(names).sort().map(function (n) {
       return '<option value="' + esc(n) + '">';
-    }).join('');
+    }).join(''));
   }
 
   function renderDriverBox() {
