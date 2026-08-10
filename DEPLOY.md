@@ -82,5 +82,6 @@ precious copy in the system.
 | Container exits: `DATA_DIR=/data is not writable` | Storage is a bind mount, not a named volume (step 3). |
 | Boot fails naming `SECRET_KEY`/`ADMIN_PASSWORD`/`API_TOKEN` | The production guard — set the variable, don't set `FLASK_DEBUG=1` to silence it. |
 | Sim PC logs `sync: upstream unreachable` | DNS/certificate not ready, or `UPSTREAM_URL` typo. Laps are queued locally, nothing is lost. |
+| Site is empty after a redeploy | The `/data` volume mount is missing (step 3), so the redeploy discarded the database. Add the volume. The sim PC notices the loss and re-pushes the whole board within ~1 minute (`sync: upstream is missing N lap(s)` in its server window) — but without the volume this repeats on every redeploy, and anything only the cloud knew (e.g. names typed on the site that hadn't been pulled yet) is gone for good. |
 | Sync delivers nothing, server logs 401 | `UPSTREAM_TOKEN` on the sim PC ≠ `API_TOKEN` on Coolify. |
 | Board doesn't update live but does on refresh | SSE blocked by a proxy — the page still polls every 5 s, so this degrades, never breaks. Check `THREADS` (default 32) if many viewers. |

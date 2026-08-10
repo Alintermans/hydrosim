@@ -94,6 +94,9 @@ Corsa running (works on any OS: `python -m collector --demo`).
 If the venue network blocks the sync, nothing is lost: laps queue in SQLite
 and ship when the connection returns. If the *local server* itself is down,
 the collector queues laps in `collector/queue.jsonl` and replays them in order.
+And if the *cloud* database is ever lost (redeploy without the volume, server
+migration), the sim PC notices within a minute — it periodically compares
+inventories and re-pushes everything the site is missing, names included.
 
 ## Cloud deploy
 

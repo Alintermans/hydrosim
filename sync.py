@@ -28,6 +28,7 @@ log = logging.getLogger(__name__)
 INTERVAL_S = 3.0
 BACKOFF_MAX_S = 60.0
 BATCH = 50
+RECONCILE_EVERY = 20  # cycles (~1 min): compare inventories, re-push gaps
 
 
 def _post(url: str, token: str, path: str, payload: dict):
@@ -40,10 +41,17 @@ def _post(url: str, token: str, path: str, payload: dict):
         },
         method="POST",
     )
-    with urllib.request.urlopen(req, timeout=10) as resp:
-        if resp.status != 200:
-            return None
-        return json.loads(resp.read().decode() or "{}")
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            if resp.status != 200:
+                return None
+            return json.loads(resp.read().decode() or "{}")
+    except urllib.error.HTTPError as exc:
+        # An HTTP answer IS a reachable upstream — e.g. a cloud still running
+        # older code without this endpoint. Skip the step, don't abort the
+        # whole cycle (connection errors still bubble up to the backoff).
+        log.warning("sync: %s answered %s", path, exc.code)
+        return None
 
 
 def apply_assignments(assignments: list) -> int:
@@ -75,15 +83,48 @@ def apply_assignments(assignments: list) -> int:
     return changed
 
 
+def mark_missing_unsynced(upstream_ids: set) -> int:
+    """Self-healing half: any local lap the upstream doesn't hold goes back to
+    synced=False so the push loop re-delivers it (with its name — assigned_at
+    makes that a clean last-write-wins upsert). This is what repopulates the
+    site after a redeploy without a persisted volume, a wipe, or a migration."""
+    relapsed = 0
+    for lap in Lap.query.filter_by(synced=True):
+        if lap.client_id not in upstream_ids:
+            lap.synced = False
+            relapsed += 1
+    if relapsed:
+        db.session.commit()
+    return relapsed
+
+
 def _run(app) -> None:
+    from models import Event
+
     url = app.config["UPSTREAM_URL"]
     token = app.config["UPSTREAM_TOKEN"]
     backoff = INTERVAL_S
+    cycle = 0
     log.info("sync: relaying laps to %s", url)
     while True:
         time.sleep(backoff)
         try:
             with app.app_context():
+                # 0. periodically: does the upstream still have everything?
+                #    (first cycle too, so a reconnect heals immediately)
+                if cycle % RECONCILE_EVERY == 0:
+                    slugs = [e.slug for e in Event.query.all()]
+                    inv = _post(url, token, "/api/sync/inventory",
+                                {"events": slugs})
+                    if inv is not None:
+                        relapsed = mark_missing_unsynced(
+                            set(inv.get("client_ids") or []))
+                        if relapsed:
+                            log.warning("sync: upstream is missing %d lap(s) "
+                                        "— re-pushing everything it lost",
+                                        relapsed)
+                cycle += 1
+
                 # 1. pull: names typed on sim.hydroteam.be come home first, so
                 #    the kiosk popup here closes within one cycle.
                 pulled = _post(url, token, "/api/sync/pull", {})

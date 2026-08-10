@@ -204,6 +204,21 @@ def assign_lap(client_id):
     return jsonify({"ok": True, "lap": lap.as_dict()})
 
 
+@api_bp.post("/sync/inventory")
+@token_required
+def sync_inventory():
+    """Which laps does this instance hold? The sim PC compares this against
+    its own database and re-pushes anything missing — so a wiped or freshly
+    re-deployed cloud instance heals itself within a sync cycle instead of
+    silently showing an empty board until the next new lap."""
+    data = request.get_json(silent=True) or {}
+    slugs = data.get("events") or []
+    q = db.session.query(Lap.client_id)
+    if slugs:
+        q = q.join(Event).filter(Event.slug.in_(slugs))
+    return jsonify({"ok": True, "client_ids": [row[0] for row in q]})
+
+
 @api_bp.post("/sync/pull")
 @token_required
 def sync_pull():
