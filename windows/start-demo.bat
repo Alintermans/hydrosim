@@ -10,8 +10,8 @@ if not exist .venv\Scripts\python.exe (
     exit /b 1
 )
 
-start "HydroSim server" .venv\Scripts\python.exe serve_windows.py
+start "HydroSim server" cmd /k .venv\Scripts\python.exe serve_windows.py
 timeout /t 3 /nobreak >nul
-start "HydroSim collector (demo)" .venv\Scripts\python.exe -m collector --demo
+start "HydroSim collector (demo)" cmd /k .venv\Scripts\python.exe -m collector --demo
 timeout /t 2 /nobreak >nul
 start "" msedge --new-window --kiosk "http://127.0.0.1:8088/kiosk" --edge-kiosk-type=fullscreen

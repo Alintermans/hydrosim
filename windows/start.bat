@@ -13,9 +13,11 @@ if not exist .venv\Scripts\python.exe (
     exit /b 1
 )
 
-start "HydroSim server" .venv\Scripts\python.exe serve_windows.py
+rem cmd /k keeps each window open if the program crashes, so the error stays
+rem readable instead of the window vanishing.
+start "HydroSim server" cmd /k .venv\Scripts\python.exe serve_windows.py
 timeout /t 3 /nobreak >nul
-start "HydroSim collector" .venv\Scripts\python.exe -m collector
+start "HydroSim collector" cmd /k .venv\Scripts\python.exe -m collector
 timeout /t 2 /nobreak >nul
 start "" msedge --new-window --kiosk "http://127.0.0.1:8088/kiosk" --edge-kiosk-type=fullscreen
 
