@@ -20,8 +20,23 @@ komt een **popup: "Who drove this lap?"** — naam intikken, **Put it on the
 board**, en de bezoeker staat in het klassement. Uitlap of testronde van het
 team? **Discard lap.**
 
-Het bord staat ook live op **https://sim.hydroteam.be** — laat bezoekers de
-QR/het adres zien, dan kunnen ze thuis hun tijd terugvinden.
+Het bord staat ook live op **https://sim.hydroteam.be** — de QR-code op het
+kioskscherm wijst ernaar, zo kunnen bezoekers thuis hun tijd terugvinden.
+
+## Namen invoeren vanaf een tweede laptop
+
+De popup hoeft niet per se op de sim-pc bediend te worden:
+
+1. Zoek het IP-adres van de sim-pc (staat na de installatie in het
+   install-overzicht, of typ `ipconfig` in een terminal → "IPv4 Address").
+2. Surf op de laptop (zelfde netwerk) naar `http://<dat-ip>:8088/kiosk`.
+3. Log éénmalig in met het adminwachtwoord (`ADMIN_PASSWORD` in `.env`).
+
+Je krijgt exact hetzelfde scherm mét popup; het grote scherm en de laptop
+mogen tegelijk openstaan — wie het eerst een naam opslaat, wint, en het
+andere scherm springt vanzelf mee. Lukt het verbinden niet, dan blokkeert
+de Windows-firewall wellicht poort 8088 — draai `windows\install.ps1` één
+keer als administrator, die zet de regel.
 
 ## Goed om te weten
 

@@ -265,7 +265,7 @@ a { color: var(--text-link); }
 .b-side { display: flex; flex-direction: column; gap: clamp(12px, 1.15vw, 22px);
   min-height: 0; }
 .b-recent { list-style: none; margin: 0; padding: 0; flex: 1; display: flex;
-  flex-direction: column; justify-content: space-between; gap: 2px;
+  flex-direction: column; justify-content: flex-start; gap: 2px;
   overflow: hidden; }
 .b-recent li { display: grid; grid-template-columns: auto minmax(0, 1fr);
   align-items: center; gap: clamp(10px, 0.94vw, 18px);
@@ -418,6 +418,20 @@ a { color: var(--text-link); }
   line-height: 1.6; color: var(--ink-300); max-width: 720px; }
 .noevent__text a { color: var(--ht-sky); }
 .noevent__conn { margin-top: clamp(8px, 0.94vw, 18px); }
+
+/* big screens: the board IS the screen — lock it to the viewport, no scroll.
+   Rows compress instead (grid-auto-rows: 1fr + min-height: 0), so 3 laps fill
+   the height and 20 laps still fit. */
+@media (min-width: 901px) {
+  .board { height: 100vh; height: 100dvh; overflow: hidden; }
+  .b-rows { overflow: hidden; }
+  .b-row, .b-row--podium { min-height: 0; overflow: hidden; }
+  /* the latest-laps list clips at the fold — fade it out so a half row reads
+     as "the list continues", not as a rendering glitch */
+  .b-recent { -webkit-mask-image: linear-gradient(to bottom,
+      black calc(100% - 56px), transparent);
+    mask-image: linear-gradient(to bottom, black calc(100% - 56px), transparent); }
+}
 
 /* small screens: boards stack, rows stop stretching */
 @media (max-width: 900px) {

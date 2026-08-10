@@ -42,8 +42,10 @@ API_TOKEN=$token
 ADMIN_PASSWORD=$admin
 FLASK_DEBUG=0
 
-# Local server: the kiosk browser runs on this same PC.
-HOST=127.0.0.1
+# 0.0.0.0 so a second laptop on the venue network can open /kiosk to enter
+# names (it signs in with ADMIN_PASSWORD; KIOSK_OPEN only skips the login for
+# this PC itself). Change to 127.0.0.1 to keep everything on this machine.
+HOST=0.0.0.0
 PORT=8088
 KIOSK_OPEN=1
 
@@ -71,9 +73,36 @@ if (-not (Test-Path "collector\collector.ini")) {
     Write-Host "collector\collector.ini already exists - leaving it untouched."
 }
 
+# --- firewall rule so a second (operator) laptop can reach the server --------
+$port = 8088
+if (Test-Path ".env") {
+    $portLine = Select-String -Path .env -Pattern "^PORT=(\d+)" | Select-Object -First 1
+    if ($portLine) { $port = [int]$portLine.Matches[0].Groups[1].Value }
+}
+$rule = Get-NetFirewallRule -DisplayName "HydroSim Timing" -ErrorAction SilentlyContinue
+if (-not $rule) {
+    try {
+        New-NetFirewallRule -DisplayName "HydroSim Timing" -Direction Inbound `
+            -Protocol TCP -LocalPort $port -Action Allow -Profile Any | Out-Null
+        Write-Host "Firewall rule added for port $port (second-laptop access)."
+    } catch {
+        Write-Warning ("Could not add the firewall rule (run PowerShell as administrator " +
+            "and re-run this script, or allow python.exe when Windows asks). " +
+            "Without it a second laptop can't reach the kiosk.")
+    }
+} else {
+    Write-Host "Firewall rule already present."
+}
+
+$ip = (Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue |
+       Where-Object { $_.IPAddress -notlike "127.*" -and $_.IPAddress -notlike "169.254.*" } |
+       Select-Object -First 1).IPAddress
+
 Write-Host ""
 Write-Host "Done. Next steps:" -ForegroundColor Cyan
 Write-Host "  1. windows\start.bat        starts server + collector + kiosk screen"
-Write-Host "  2. Open http://127.0.0.1:8088/admin and create/activate an event"
+Write-Host "  2. Open http://127.0.0.1:$port/admin and create/activate an event"
 Write-Host "     (admin password: see ADMIN_PASSWORD in .env)"
-Write-Host "  3. For the public live view, set UPSTREAM_TOKEN in .env (DEPLOY.md)"
+Write-Host "  3. Names from a second laptop: browse to http://${ip}:$port/kiosk"
+Write-Host "     on that laptop and sign in with the admin password."
+Write-Host "  4. For the public live view, set UPSTREAM_TOKEN in .env (DEPLOY.md)"

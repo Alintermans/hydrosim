@@ -72,6 +72,14 @@ never reach the board, but stay visible in the admin and the CSV.
 5. Open `http://127.0.0.1:8088/admin`, create an event (e.g. track filter
    `spa`) and activate it.
 
+**Entering names from a second laptop**: the server binds `0.0.0.0`, so any
+laptop on the venue network can open `http://<sim-pc-ip>:8088/kiosk` and sign
+in once with `ADMIN_PASSWORD` — same screen, same popup, live in sync with
+the big screen. `KIOSK_OPEN=1` skips that login for the sim PC itself only
+(loopback requests); other machines always see the login first, so the venue
+Wi-Fi never gets a token-holding page for free. `install.ps1` adds the
+Windows-firewall rule (run it as administrator if that step warns).
+
 `windows\start-demo.bat` does the same with a **demo collector** that invents
 a lap every ~25 s — test the popup, the board and the sync without Assetto
 Corsa running (works on any OS: `python -m collector --demo`).

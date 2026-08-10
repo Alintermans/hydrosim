@@ -55,9 +55,16 @@ def admin_required(f):
 
 
 def kiosk_allowed() -> bool:
-    """/kiosk renders for an admin, or for anyone when KIOSK_OPEN=1 (the sim PC
-    binds 127.0.0.1, so 'anyone' is the machine driving the second screen)."""
-    return is_admin() or current_app.config.get("KIOSK_OPEN", False)
+    """/kiosk renders for an admin, or — with KIOSK_OPEN=1 — for the sim PC
+    itself. KIOSK_OPEN only ever counts for loopback requests, so the server
+    may bind 0.0.0.0 for a second operator laptop on the venue network: that
+    laptop signs in once with ADMIN_PASSWORD, while random visitors on the
+    same Wi-Fi get the login page instead of a page holding the API token."""
+    if is_admin():
+        return True
+    if not current_app.config.get("KIOSK_OPEN", False):
+        return False
+    return (request.remote_addr or "") in ("127.0.0.1", "::1")
 
 
 def init_security(app) -> None:

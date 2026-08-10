@@ -53,9 +53,28 @@ def test_kiosk_closed_without_flag(client, event):
 def test_kiosk_open_on_sim_pc(app, event):
     app.config["KIOSK_OPEN"] = True
     client = app.test_client()
-    resp = client.get("/kiosk")
+    resp = client.get("/kiosk")  # test client is a loopback request
     assert resp.status_code == 200
     assert b"popup" in resp.data  # the operator overlay is in the page
+
+
+def test_kiosk_open_is_loopback_only(app, event):
+    """KIOSK_OPEN must not expose the token-holding page to the venue Wi-Fi:
+    a non-loopback client gets the admin login instead."""
+    app.config["KIOSK_OPEN"] = True
+    client = app.test_client()
+    resp = client.get("/kiosk", environ_overrides={"REMOTE_ADDR": "192.168.1.50"})
+    assert resp.status_code == 302 and "/admin/login" in resp.headers["Location"]
+
+
+def test_kiosk_admin_from_other_machine(app, event):
+    """The operator laptop: sign in with the admin password, kiosk works."""
+    client = app.test_client()
+    client.post("/admin/login", data={"password": ADMIN_PW, "next": ""},
+                environ_overrides={"REMOTE_ADDR": "192.168.1.50"})
+    resp = client.get("/kiosk", environ_overrides={"REMOTE_ADDR": "192.168.1.50"})
+    assert resp.status_code == 200
+    assert b"popup" in resp.data
 
 
 def test_public_board_renders(client, event):
