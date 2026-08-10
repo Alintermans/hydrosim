@@ -25,18 +25,22 @@ kioskscherm wijst ernaar, zo kunnen bezoekers thuis hun tijd terugvinden.
 
 ## Namen invoeren vanaf een tweede laptop
 
-De popup hoeft niet per se op de sim-pc bediend te worden:
+De popup hoeft niet op de sim-pc zelf bediend te worden. Ga op eender welke
+laptop (eigen 4G mag, hoeft niet het venue-netwerk te zijn) naar
+**https://sim.hydroteam.be/kiosk** en log in met het adminwachtwoord van de
+*cloud*-app. Je krijgt hetzelfde scherm mét popup: rondes verschijnen er
+binnen enkele seconden, en een naam die je daar intikt staat binnen enkele
+seconden óók op het grote scherm naast de sim. Beide schermen mogen tegelijk
+openstaan — wie het laatst antwoordt, wint, en het andere scherm springt
+vanzelf mee.
 
-1. Zoek het IP-adres van de sim-pc (staat na de installatie in het
-   install-overzicht, of typ `ipconfig` in een terminal → "IPv4 Address").
-2. Surf op de laptop (zelfde netwerk) naar `http://<dat-ip>:8088/kiosk`.
-3. Log éénmalig in met het adminwachtwoord (`ADMIN_PASSWORD` in `.env`).
-
-Je krijgt exact hetzelfde scherm mét popup; het grote scherm en de laptop
-mogen tegelijk openstaan — wie het eerst een naam opslaat, wint, en het
-andere scherm springt vanzelf mee. Lukt het verbinden niet, dan blokkeert
-de Windows-firewall wellicht poort 8088 — draai `windows\install.ps1` één
-keer als administrator, die zet de regel.
+Valt het internet weg, dan werkt dit uiteraard even niet (de sim-pc zelf
+draait gewoon door). Er is een fallback zonder internet: surf op een laptop
+op hetzelfde netwerk als de sim-pc naar `http://<ip-van-de-sim-pc>:8088/kiosk`
+en log in met het adminwachtwoord van de *sim-pc* (`ADMIN_PASSWORD` in
+`.env`; het IP staat in het install-overzicht of via `ipconfig`). Verbindt
+dat niet, draai `windows\install.ps1` eenmalig als administrator voor de
+firewallregel.
 
 ## Goed om te weten
 

@@ -102,6 +102,11 @@ class Lap(db.Model):
     recorded_at = db.Column(db.DateTime, nullable=False, default=utcnow)  # when driven (UTC)
     created_at = db.Column(db.DateTime, nullable=False, default=utcnow)   # when stored here
 
+    # When driver_name/discarded last changed (UTC). The sync protocol's
+    # last-write-wins clock: names can be assigned on the sim PC's kiosk AND
+    # on sim.hydroteam.be at the same time; the later answer wins everywhere.
+    assigned_at = db.Column(db.DateTime, nullable=True)
+
     # Local instance only: False until the upstream relay has delivered this
     # row (again). Assigning a name flips it back to False so the update ships.
     synced = db.Column(db.Boolean, nullable=False, default=False)
@@ -156,6 +161,8 @@ class Lap(db.Model):
             "grip": self.grip,
             "session_type": self.session_type,
             "recorded_at": self.recorded_at.isoformat() + "Z",
+            "assigned_at": (self.assigned_at.isoformat() + "Z"
+                            if self.assigned_at else None),
         }
 
 

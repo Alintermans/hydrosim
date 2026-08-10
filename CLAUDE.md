@@ -12,9 +12,15 @@ two instances of the *same app*:
 - **cloud (Coolify, sim.hydroteam.be)**: gunicorn, Dockerfile build pack,
   `/data` volume. Public live view only.
 
-The local instance is authoritative during an event; `sync.py` relays laps
-(and later name corrections) upstream, idempotent on `Lap.client_id`. The
-cloud's `/api/sync/laps` upserts verbatim and auto-creates unknown events.
+The local instance is authoritative for LAPS during an event; `sync.py`
+relays them upstream, idempotent on `Lap.client_id`, and the cloud's
+`/api/sync/laps` upserts and auto-creates unknown events. NAMES flow both
+ways: the popup can be answered on the sim PC's kiosk or on
+sim.hydroteam.be/kiosk (admin session). Assignments are last-write-wins on
+`Lap.assigned_at`; `synced=False` marks "this instance changed it, the other
+hasn't seen it" on BOTH sides — the local relay pushes its unsynced rows and
+pulls the cloud's via `/api/sync/pull` each cycle. Don't break that clock:
+every write to driver_name/discarded must stamp `assigned_at`.
 
 ## Commands
 

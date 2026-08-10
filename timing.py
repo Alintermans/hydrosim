@@ -37,7 +37,7 @@ def home():
 def board(slug):
     event = Event.query.filter_by(slug=slug).first_or_404()
     return render_template("board.html", event=event, operator=False,
-                           api_token="", qr=None)
+                           api_token="", qr=None, show_driverbox=False)
 
 
 @timing_bp.get("/kiosk")
@@ -50,9 +50,14 @@ def kiosk():
     # The kiosk JS talks to the operator API with the bearer token. This page
     # only renders on the sim PC itself (127.0.0.1 + KIOSK_OPEN) or behind the
     # admin login, so handing it the token is deliberate.
+    # "Driver in the seat" pre-assigns at INGEST, which only happens on the
+    # instance the collector posts to — on the cloud kiosk the box would be a
+    # dead control, so it only renders where laps actually arrive.
+    ingests = bool(current_app.config.get("KIOSK_OPEN")
+                   or current_app.config.get("UPSTREAM_URL"))
     return render_template("board.html", event=event, operator=True,
                            api_token=current_app.config["API_TOKEN"],
-                           qr=_public_board_qr(event))
+                           qr=_public_board_qr(event), show_driverbox=ingests)
 
 
 def _public_board_qr(event):
@@ -208,6 +213,8 @@ def admin_lap_update(lap_id):
         lap.discarded = False
     else:
         lap.driver_name = request.form.get("driver_name", "").strip()[:80] or None
+    from models import utcnow
+    lap.assigned_at = utcnow()
     lap.synced = False
     db.session.commit()
     import live

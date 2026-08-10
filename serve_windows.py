@@ -8,12 +8,11 @@ import os
 
 from waitress import serve
 
-from app import create_app
-from models import db
+from app import create_app, ensure_schema
 
 app = create_app()
 with app.app_context():
-    db.create_all()
+    ensure_schema(app)
 
 host = os.environ.get("HOST", "127.0.0.1")
 port = int(os.environ.get("PORT", "8088"))

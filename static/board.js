@@ -226,14 +226,17 @@
     document.getElementById('popup-name').addEventListener('keydown', function (e) {
       if (e.key === 'Enter') saveName();
     });
-    document.getElementById('driver-set').addEventListener('click', function () {
-      var name = document.getElementById('driver-input').value.trim();
-      api('/api/current-driver', { name: name }).then(refresh);
-    });
-    document.getElementById('driver-clear').addEventListener('click', function () {
-      document.getElementById('driver-input').value = '';
-      api('/api/current-driver', { name: '' }).then(refresh);
-    });
+    var driverSet = document.getElementById('driver-set');
+    if (driverSet) { // the driver box only renders on the ingesting instance
+      driverSet.addEventListener('click', function () {
+        var name = document.getElementById('driver-input').value.trim();
+        api('/api/current-driver', { name: name }).then(refresh);
+      });
+      document.getElementById('driver-clear').addEventListener('click', function () {
+        document.getElementById('driver-input').value = '';
+        api('/api/current-driver', { name: '' }).then(refresh);
+      });
+    }
   }
 
   var filterSel = document.getElementById('car-filter');

@@ -24,17 +24,29 @@ log = logging.getLogger(__name__)
 api_bp = Blueprint("api", __name__, url_prefix="/api")
 
 
+def _parse_dt(value) -> datetime | None:
+    if not value:
+        return None
+    try:
+        parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        if parsed.tzinfo is not None:
+            parsed = parsed.astimezone(timezone.utc).replace(tzinfo=None)
+        return parsed
+    except ValueError:
+        return None
+
+
 def _parse_recorded_at(value) -> datetime:
-    if value:
-        try:
-            parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
-            if parsed.tzinfo is not None:
-                parsed = parsed.astimezone(timezone.utc).replace(tzinfo=None)
-            return parsed
-        except ValueError:
-            pass
     from models import utcnow
-    return utcnow()
+    return _parse_dt(value) or utcnow()
+
+
+def _incoming_wins(incoming_at: datetime | None, stored_at: datetime | None) -> bool:
+    """Last write wins; an unstamped side loses to a stamped one; a push of
+    the very same assignment (equal stamps) is accepted as a no-op."""
+    if incoming_at is None:
+        return stored_at is None
+    return stored_at is None or incoming_at >= stored_at
 
 
 def _lap_fields(data: dict) -> dict:
@@ -98,10 +110,12 @@ def ingest_lap():
         log.info("lap refused: %s", reason)
         return jsonify({"ok": True, "accepted": False, "reason": reason})
 
+    from models import utcnow
     cuts = int(data.get("cuts") or 0)
     valid = cuts <= event.max_cuts and lap_ms >= event.min_lap_s * 1000
     lap = Lap(client_id=client_id, event_id=event.id, lap_ms=lap_ms, cuts=cuts,
-              valid=valid, driver_name=event.current_driver or None, **fields)
+              valid=valid, driver_name=event.current_driver or None,
+              assigned_at=utcnow() if event.current_driver else None, **fields)
     db.session.add(lap)
     db.session.commit()
     live.publish("lap", event.slug)
@@ -146,13 +160,19 @@ def sync_laps():
             lap = Lap(client_id=client_id, event_id=event.id, lap_ms=lap_ms,
                       **_lap_fields(lap_data))
             db.session.add(lap)
-        # Mutable outcome fields — corrections travel on re-sync.
-        lap.driver_name = (str(lap_data["driver_name"])[:80]
-                           if lap_data.get("driver_name") else None)
         lap.cuts = int(lap_data.get("cuts") or 0)
         lap.valid = bool(lap_data.get("valid", True))
-        lap.discarded = bool(lap_data.get("discarded", False))
-        lap.synced = True  # meaningless on the cloud, but keep it truthful
+        # The assignment half (name / discard) is last-write-wins: this
+        # instance's kiosk may have answered the popup *after* the sim PC's
+        # push was queued — then our answer stands (and synced stays False, so
+        # /api/sync/pull still hands it back to the sim PC).
+        incoming_at = _parse_dt(lap_data.get("assigned_at"))
+        if _incoming_wins(incoming_at, lap.assigned_at):
+            lap.driver_name = (str(lap_data["driver_name"])[:80]
+                               if lap_data.get("driver_name") else None)
+            lap.discarded = bool(lap_data.get("discarded", False))
+            lap.assigned_at = incoming_at
+            lap.synced = True  # matches the sim PC again; nothing to pull
         stored += 1
     db.session.commit()
     live.publish("lap", event.slug)
@@ -162,7 +182,8 @@ def sync_laps():
 @api_bp.post("/laps/<client_id>/assign")
 @token_required
 def assign_lap(client_id):
-    """The name popup's answer: a driver name, or 'ignore this lap'."""
+    """The name popup's answer: a driver name, or 'ignore this lap'. Runs on
+    the sim PC's kiosk AND on sim.hydroteam.be (admin session there)."""
     lap = Lap.query.filter_by(client_id=client_id).first()
     if lap is None:
         return jsonify({"ok": False, "error": "unknown lap"}), 404
@@ -175,10 +196,32 @@ def assign_lap(client_id):
             return jsonify({"ok": False, "error": "driver_name required"}), 400
         lap.driver_name = name
         lap.discarded = False
-    lap.synced = False  # the correction must travel upstream too
+    from models import utcnow
+    lap.assigned_at = utcnow()
+    lap.synced = False  # the correction must travel to the other instance
     db.session.commit()
     live.publish("name", lap.event.slug)
     return jsonify({"ok": True, "lap": lap.as_dict()})
+
+
+@api_bp.post("/sync/pull")
+@token_required
+def sync_pull():
+    """The other direction: the sim PC collects assignments made on THIS
+    instance (names typed on sim.hydroteam.be by a signed-in admin). Rows with
+    synced=False here are exactly the ones this instance changed itself;
+    handing them over marks them synced."""
+    laps = Lap.query.filter_by(synced=False).order_by(Lap.id).limit(200).all()
+    out = []
+    for lap in laps:
+        out.append({"client_id": lap.client_id,
+                    "driver_name": lap.driver_name,
+                    "discarded": lap.discarded,
+                    "assigned_at": (lap.assigned_at.isoformat() + "Z"
+                                    if lap.assigned_at else None)})
+        lap.synced = True
+    db.session.commit()
+    return jsonify({"ok": True, "assignments": out})
 
 
 @api_bp.post("/current-driver")

@@ -72,13 +72,20 @@ never reach the board, but stay visible in the admin and the CSV.
 5. Open `http://127.0.0.1:8088/admin`, create an event (e.g. track filter
    `spa`) and activate it.
 
-**Entering names from a second laptop**: the server binds `0.0.0.0`, so any
-laptop on the venue network can open `http://<sim-pc-ip>:8088/kiosk` and sign
-in once with `ADMIN_PASSWORD` — same screen, same popup, live in sync with
-the big screen. `KIOSK_OPEN=1` skips that login for the sim PC itself only
-(loopback requests); other machines always see the login first, so the venue
-Wi-Fi never gets a token-holding page for free. `install.ps1` adds the
-Windows-firewall rule (run it as administrator if that step warns).
+**Entering names from a second laptop** — two ways:
+
+- **Via the site (normal case)**: open `https://sim.hydroteam.be/kiosk` on
+  any laptop, sign in with the cloud instance's `ADMIN_PASSWORD`. Pending
+  laps sync up unnamed; a name typed there travels back to the sim PC on the
+  next sync cycle (~3 s) and closes the popup on the big screen too. Both
+  kiosks may be open at once — assignments are last-write-wins on a per-lap
+  clock (`Lap.assigned_at`), so the later answer sticks everywhere.
+- **Via the venue LAN (offline fallback)**: the server binds `0.0.0.0`, so a
+  laptop on the same network can open `http://<sim-pc-ip>:8088/kiosk` and
+  sign in with the sim PC's `ADMIN_PASSWORD`. `KIOSK_OPEN=1` skips the login
+  for loopback requests only, so the venue Wi-Fi never gets the token-holding
+  page for free. `install.ps1` adds the Windows-firewall rule (run as
+  administrator if that step warns).
 
 `windows\start-demo.bat` does the same with a **demo collector** that invents
 a lap every ~25 s — test the popup, the board and the sync without Assetto

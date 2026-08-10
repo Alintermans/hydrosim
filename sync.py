@@ -30,11 +30,10 @@ BACKOFF_MAX_S = 60.0
 BATCH = 50
 
 
-def _push(url: str, token: str, payload: dict) -> bool:
-    body = json.dumps(payload).encode()
+def _post(url: str, token: str, path: str, payload: dict):
     req = urllib.request.Request(
-        url + "/api/sync/laps",
-        data=body,
+        url + path,
+        data=json.dumps(payload).encode(),
         headers={
             "Content-Type": "application/json",
             "Authorization": f"Bearer {token}",
@@ -42,7 +41,38 @@ def _push(url: str, token: str, payload: dict) -> bool:
         method="POST",
     )
     with urllib.request.urlopen(req, timeout=10) as resp:
-        return resp.status == 200
+        if resp.status != 200:
+            return None
+        return json.loads(resp.read().decode() or "{}")
+
+
+def apply_assignments(assignments: list) -> int:
+    """Apply name/discard decisions pulled from the cloud onto local rows.
+    Same last-write-wins clock as the push direction (api._incoming_wins);
+    a row the local operator answered later keeps its answer and will
+    overwrite the cloud on the next push. Returns how many rows changed."""
+    from api import _incoming_wins, _parse_dt
+    changed = 0
+    for a in assignments:
+        lap = Lap.query.filter_by(client_id=str(a.get("client_id", ""))).first()
+        if lap is None:
+            continue
+        incoming_at = _parse_dt(a.get("assigned_at"))
+        if not _incoming_wins(incoming_at, lap.assigned_at):
+            continue
+        name = (str(a["driver_name"])[:80] if a.get("driver_name") else None)
+        discarded = bool(a.get("discarded", False))
+        if (name, discarded, incoming_at) == (lap.driver_name, lap.discarded,
+                                              lap.assigned_at):
+            continue
+        lap.driver_name = name
+        lap.discarded = discarded
+        lap.assigned_at = incoming_at
+        lap.synced = True  # this IS the cloud's state; nothing new to push
+        changed += 1
+    if changed:
+        db.session.commit()
+    return changed
 
 
 def _run(app) -> None:
@@ -54,6 +84,18 @@ def _run(app) -> None:
         time.sleep(backoff)
         try:
             with app.app_context():
+                # 1. pull: names typed on sim.hydroteam.be come home first, so
+                #    the kiosk popup here closes within one cycle.
+                pulled = _post(url, token, "/api/sync/pull", {})
+                if pulled and pulled.get("assignments"):
+                    changed = apply_assignments(pulled["assignments"])
+                    if changed:
+                        import live
+                        live.publish("name", "")
+                        log.info("sync: applied %d assignment(s) from upstream",
+                                 changed)
+
+                # 2. push: everything local that the cloud hasn't seen yet.
                 laps = (Lap.query.filter_by(synced=False)
                         .order_by(Lap.id).limit(BATCH).all())
                 if not laps:
@@ -69,7 +111,7 @@ def _run(app) -> None:
                     },
                     "laps": [l.as_dict() for l in batch],
                 }
-                if _push(url, token, payload):
+                if _post(url, token, "/api/sync/laps", payload) is not None:
                     for l in batch:
                         l.synced = True
                     db.session.commit()

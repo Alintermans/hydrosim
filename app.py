@@ -68,10 +68,24 @@ def create_app(config_object=Config) -> Flask:
     @app.cli.command("init-db")
     def init_db():
         """Create tables. Idempotent — runs on every container start."""
-        db.create_all()
+        ensure_schema(app)
         click.echo("Database ready.")
 
     import sync
     sync.start(app)
 
     return app
+
+
+def ensure_schema(app) -> None:
+    """create_all plus the additive columns it can't add to existing SQLite
+    tables (hydroapps' _ensure_columns pattern, one entry so far)."""
+    from sqlalchemy import text
+    db.create_all()
+    if not app.config["SQLALCHEMY_DATABASE_URI"].startswith("sqlite"):
+        return
+    with db.engine.connect() as conn:
+        cols = {row[1] for row in conn.execute(text("PRAGMA table_info(laps)"))}
+        if "assigned_at" not in cols:
+            conn.execute(text("ALTER TABLE laps ADD COLUMN assigned_at DATETIME"))
+            conn.commit()
