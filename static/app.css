@@ -139,6 +139,7 @@ h1, h2 { font-family: var(--heading-family); font-weight: var(--heading-weight);
   font-size: var(--text-xs); color: var(--ink-500); }
 
 /* ---- the name popup -------------------------------------------------- */
+.popup[hidden] { display: none; }
 .popup { position: fixed; inset: 0; z-index: 100; display: flex;
   align-items: center; justify-content: center;
   background: rgba(2, 19, 31, 0.8); backdrop-filter: blur(6px); }
