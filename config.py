@@ -11,7 +11,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(encoding="utf-8-sig")  # tolerate the BOM PowerShell 5 writes
 
 BASE_DIR = Path(__file__).resolve().parent
 

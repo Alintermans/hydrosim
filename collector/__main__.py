@@ -34,7 +34,8 @@ def log(msg: str) -> None:
 
 def load_config(path: Path) -> dict:
     cp = configparser.ConfigParser()
-    cp.read(path, encoding="utf-8")
+    # utf-8-sig: Windows PowerShell writes a BOM; plain utf-8 chokes on it.
+    cp.read(path, encoding="utf-8-sig")
     return {
         "url": cp.get("server", "url", fallback="http://127.0.0.1:8088").rstrip("/"),
         "token": cp.get("server", "token", fallback=""),

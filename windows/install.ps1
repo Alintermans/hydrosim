@@ -30,6 +30,13 @@ Write-Host "Dependencies installed."
 # --- helpers -----------------------------------------------------------------
 function New-Secret { -join ((48..57) + (97..122) | Get-Random -Count 40 | ForEach-Object { [char]$_ }) }
 
+# Windows PowerShell 5's `Set-Content -Encoding UTF8` writes a BOM, which
+# configparser/dotenv then read as content. Write plain UTF-8 instead.
+function Write-Utf8NoBom($Path, $Content) {
+    $enc = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText("$PWD\$Path", $Content, $enc)
+}
+
 # --- .env --------------------------------------------------------------------
 if (-not (Test-Path ".env")) {
     $secret = New-Secret
@@ -53,7 +60,7 @@ KIOSK_OPEN=1
 # configured on the Coolify app (see DEPLOY.md), then restart start.bat.
 UPSTREAM_URL=https://sim.hydroteam.be
 UPSTREAM_TOKEN=
-"@ | Set-Content -Encoding UTF8 .env
+"@ | ForEach-Object { Write-Utf8NoBom ".env" $_ }
     Write-Host ".env created. Admin password: $admin  (also in .env)" -ForegroundColor Yellow
 } else {
     Write-Host ".env already exists - leaving it untouched."
@@ -64,10 +71,10 @@ if (-not (Test-Path "collector\collector.ini")) {
     $envMap = @{}
     Get-Content .env | Where-Object { $_ -match "^\s*([A-Z_]+)=(.*)$" } |
         ForEach-Object { $envMap[$Matches[1]] = $Matches[2] }
-    (Get-Content "collector\collector.example.ini") `
+    $ini = (Get-Content -Raw "collector\collector.example.ini") `
         -replace "token = CHANGE-ME", "token = $($envMap['API_TOKEN'])" `
-        -replace "8088", $envMap['PORT'] |
-        Set-Content -Encoding UTF8 "collector\collector.ini"
+        -replace "8088", $envMap['PORT']
+    Write-Utf8NoBom "collector\collector.ini" $ini
     Write-Host "collector\collector.ini created with the matching token."
 } else {
     Write-Host "collector\collector.ini already exists - leaving it untouched."
