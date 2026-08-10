@@ -257,10 +257,10 @@ def state():
                    Lap.query.filter_by(event_id=event.id, discarded=False)
                    if l.car})
 
-    from zoneinfo import ZoneInfo
-
     from flask import current_app
-    zone = ZoneInfo(current_app.config["TIMEZONE"])
+
+    from models import local_zone
+    zone = local_zone(current_app.config["TIMEZONE"])
     today = datetime.now(zone).date()
     all_laps = Lap.query.filter_by(event_id=event.id, discarded=False).all()
     drivers = {l.driver_name.strip().casefold() for l in all_laps if l.driver_name}

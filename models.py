@@ -26,6 +26,17 @@ def utcnow() -> datetime:
     return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
+def local_zone(name: str):
+    """Timezone by name, falling back to UTC. Windows ships no tz database
+    (the tzdata pip package provides it); a missing zone shifts 'laps today'
+    by two hours at worst — it must never 500 the board."""
+    try:
+        from zoneinfo import ZoneInfo
+        return ZoneInfo(name)
+    except Exception:
+        return timezone.utc
+
+
 class Event(db.Model):
     __tablename__ = "events"
 

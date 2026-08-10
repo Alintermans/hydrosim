@@ -12,12 +12,11 @@ import csv
 import hmac
 import io
 from datetime import timezone as tz
-from zoneinfo import ZoneInfo
 
 from flask import (Blueprint, Response, abort, current_app, flash, redirect,
                    render_template, request, session, url_for)
 
-from models import KINDS, KIND_EVENT, Event, Lap, db
+from models import KINDS, KIND_EVENT, Event, Lap, db, local_zone
 from security import admin_required, kiosk_allowed
 
 timing_bp = Blueprint("timing", __name__)
@@ -226,7 +225,7 @@ def admin_lap_update(lap_id):
 @admin_required
 def laps_csv(event_id):
     event = db.session.get(Event, event_id) or abort(404)
-    zone = ZoneInfo(current_app.config["TIMEZONE"])
+    zone = local_zone(current_app.config["TIMEZONE"])
     out = io.StringIO()
     w = csv.writer(out)
     w.writerow(["recorded_at", "driver", "lap_time", "lap_ms", "valid", "cuts",
