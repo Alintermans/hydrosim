@@ -1,0 +1,12 @@
+.venv/
+venv/
+__pycache__/
+*.pyc
+.env
+data/
+*.db
+*.db-shm
+*.db-wal
+collector/collector.ini
+collector/queue.jsonl
+.pytest_cache/

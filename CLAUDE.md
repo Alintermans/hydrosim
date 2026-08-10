@@ -1,0 +1,71 @@
+# CLAUDE.md
+
+Guidance for Claude Code when working in this repository.
+
+## What this is
+
+Live lap timing for the HydroTeam Assetto Corsa simulator. One Flask codebase,
+two instances of the *same app*:
+
+- **sim PC (Windows)**: waitress (`serve_windows.py`, 127.0.0.1:8088) +
+  the collector (`python -m collector`) + an Edge kiosk window on `/kiosk`.
+- **cloud (Coolify, sim.hydroteam.be)**: gunicorn, Dockerfile build pack,
+  `/data` volume. Public live view only.
+
+The local instance is authoritative during an event; `sync.py` relays laps
+(and later name corrections) upstream, idempotent on `Lap.client_id`. The
+cloud's `/api/sync/laps` upserts verbatim and auto-creates unknown events.
+
+## Commands
+
+```bash
+python -m venv .venv && . .venv/bin/activate
+pip install -r requirements-dev.txt
+flask --app app init-db
+FLASK_DEBUG=1 flask --app app run        # http://localhost:5000
+pytest                                    # full suite
+python -m collector --demo                # fake laps (any OS; needs collector.ini)
+```
+
+Windows: `windows\install.ps1` once, then `windows\start.bat`
+(or `start-demo.bat` to rehearse without AC).
+
+## Architecture rules — keep these
+
+- **Events are data.** A new fair/track/season is an `Event` row created in
+  `/admin`, never a code change. Ingest rules (track/car filter, min lap,
+  max cuts) live on the event.
+- **Every lap stores the full sim context** (car, tyres, aids, temps, grip —
+  see `Lap`). Public boards just don't render most of it; in-house boards and
+  the CSV do. Don't strip columns to "simplify" the public event.
+- **Ingest judges, sync doesn't.** `/api/laps` (collector) applies the event's
+  rules; `/api/sync/laps` (relay) stores verbatim — the local instance already
+  judged. Don't make the cloud re-validate.
+- **`live.py` is in-process**, hence `gunicorn.conf.py` pins `workers = 1`
+  (threads carry SSE). SSE messages are only "something changed" pings; clients
+  refetch `/api/state`. The kiosk also polls every 5 s — updates degrade,
+  never break. Don't put state in the stream.
+- **Offline is a feature.** Collector → local server has a `queue.jsonl`
+  fallback; local → cloud has `Lap.synced` + retry. Nothing may require the
+  venue's network.
+- **Auth**: admin = one shared `ADMIN_PASSWORD` session; machine calls =
+  `API_TOKEN` bearer (compare_digest). The api blueprint is CSRF-exempt and
+  must therefore never trust a cookie. `/kiosk` holds the token in-page — only
+  rendered when `KIOSK_OPEN=1` (sim PC binds 127.0.0.1) or behind admin login.
+  `security.py`'s boot guard refuses production defaults; don't weaken it.
+- **Windows-compatible server code only** (the sim PC runs waitress): nothing
+  Unix-only outside `gunicorn.conf.py`/`entrypoint.sh`.
+- **Style**: HydroTeam DS tokens (`static/ds/tokens/`, from the hydroapps
+  repo) — `var(--ht-blue)`, Montserrat, JetBrains Mono for lap times. English
+  chrome, Dutch visitor-facing popup text (hydroapps convention).
+- Collector structs in `collector/ac_shared_memory.py` are AC 1.16 layouts,
+  `_pack_ = 4` — verify against real AC before "fixing" field order. Cut
+  detection and aid usage are aggregated per lap in `collector/__main__.py`.
+
+## Testing
+
+`tests/conftest.py` builds an isolated app per test (tmp SQLite, CSRF off,
+token `test-token`, admin `test-admin`). `lap_payload()` is the canonical
+collector payload. The sync tests drive the *cloud* half through the public
+endpoint; `smoke`-style two-instance testing is manual (see git history).
+CI (`.github/workflows/ci.yml`) runs pytest on Python 3.12.

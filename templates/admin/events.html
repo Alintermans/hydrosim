@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Events · HydroSim Timing{% endblock %}
+{% block bodyclass %}admin-page{% endblock %}
+{% block body %}
+<div class="a-wrap">
+  <header class="a-header">
+    <img src="{{ url_for('static', filename='assets/logo-wordmark.svg') }}" alt="HydroTeam" class="a-logo">
+    <h1>Events</h1>
+    <div class="a-header__actions">
+      <a class="btn btn--blue" href="{{ url_for('timing.event_new') }}">+ New event</a>
+      <a class="btn btn--ghost-dark" href="{{ url_for('timing.home') }}">View board</a>
+      <form method="post" action="{{ url_for('timing.logout') }}" class="inline">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn--ghost-dark" type="submit">Sign out</button>
+      </form>
+    </div>
+  </header>
+
+  <div class="card">
+    <table class="a-table">
+      <thead>
+        <tr><th>Event</th><th>Kind</th><th>Track filter</th><th>Laps</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for event in events %}
+        <tr>
+          <td>
+            <strong>{{ event.name }}</strong>
+            {% if event.active %}<span class="chip chip--active">ACTIVE</span>{% endif %}
+            <div class="a-muted">/e/{{ event.slug }}</div>
+          </td>
+          <td>{{ event.kind }}</td>
+          <td>{{ event.track_filter or "any" }}{% if event.car_filter %} · {{ event.car_filter }}{% endif %}</td>
+          <td>{{ counts[event.id] }}</td>
+          <td class="a-actions">
+            {% if not event.active %}
+            <form method="post" action="{{ url_for('timing.event_activate', event_id=event.id) }}" class="inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="btn btn--sm btn--blue" type="submit">Activate</button>
+            </form>
+            {% endif %}
+            <a class="btn btn--sm btn--ghost-dark" href="{{ url_for('timing.event_edit', event_id=event.id) }}">Edit</a>
+            <a class="btn btn--sm btn--ghost-dark" href="{{ url_for('timing.admin_laps', event_id=event.id) }}">Laps</a>
+            <a class="btn btn--sm btn--ghost-dark" href="{{ url_for('timing.laps_csv', event_id=event.id) }}">CSV</a>
+            {% if counts[event.id] == 0 %}
+            <form method="post" action="{{ url_for('timing.event_delete', event_id=event.id) }}" class="inline"
+                  onsubmit="return confirm('Delete event {{ event.name }}?');">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="btn btn--sm btn--danger" type="submit">Delete</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5">No events yet — create one.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

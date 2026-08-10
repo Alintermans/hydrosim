@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Admin · HydroSim Timing{% endblock %}
+{% block bodyclass %}admin-page{% endblock %}
+{% block body %}
+<div class="a-wrap a-wrap--narrow">
+  <div class="card">
+    <p class="ht-eyebrow"><span>HydroSim Timing</span></p>
+    <h1>Admin</h1>
+    <form method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="next" value="{{ next }}">
+      <label for="password">Password</label>
+      <input type="password" id="password" name="password" autofocus required>
+      <button class="btn btn--blue" type="submit">Sign in</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

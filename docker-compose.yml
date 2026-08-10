@@ -1,0 +1,13 @@
+# Local production-style run: cp .env.example .env && docker compose up -d --build
+services:
+  hydrosim:
+    build: .
+    ports:
+      - "8000:8000"
+    env_file: .env
+    volumes:
+      - hydrosim_data:/data
+    restart: unless-stopped
+
+volumes:
+  hydrosim_data:

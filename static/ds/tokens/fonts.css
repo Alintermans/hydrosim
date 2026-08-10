@@ -1,0 +1,20 @@
+/* ===========================================================================
+   HydroTeam: Fonts
+   ---------------------------------------------------------------------------
+   The team's decks are set in MONTSERRAT (confirmed by the team). Montserrat
+   is the display + UI + body face here; JetBrains Mono carries real data
+   (spec figures, telemetry). The logo keeps its own custom italic wordmark.
+   =========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,500;1,700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+:root {
+  /* Display, big uppercase slide titles, hero. Montserrat 800/900. */
+  --font-display: 'Montserrat', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  /* Headings / UI labels. */
+  --font-heading: 'Montserrat', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  /* Body / running text. */
+  --font-body: 'Montserrat', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  /* Mono, real data, specs, telemetry, code. */
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', monospace;
+}

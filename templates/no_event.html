@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}HydroSim Timing{% endblock %}
+{% block bodyclass %}board-page{% endblock %}
+{% block body %}
+<div class="board board--center">
+  <img class="b-logo" src="{{ url_for('static', filename='assets/logo-wordmark-white.svg') }}" alt="HydroTeam">
+  <h1 class="ht-display">No active event</h1>
+  <p class="b-empty">Create and activate an event in <a href="{{ url_for('timing.admin_events') }}">the admin</a>.</p>
+</div>
+{% endblock %}

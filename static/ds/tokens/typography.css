@@ -1,0 +1,62 @@
+/* ===========================================================================
+   HydroTeam: Typography scale
+   ---------------------------------------------------------------------------
+   Display is Montserrat, tight + UPPERCASE for big titles. The logo keeps the
+   brand's forward italic slant; the deck type stays upright.
+   =========================================================================== */
+
+:root {
+  /* Type scale (1.250 major-third-ish, tuned) */
+  --text-2xs: 0.6875rem;  /* 11px */
+  --text-xs:  0.75rem;    /* 12px */
+  --text-sm:  0.875rem;   /* 14px */
+  --text-md:  1rem;       /* 16px, base */
+  --text-lg:  1.25rem;    /* 20px */
+  --text-xl:  1.5rem;     /* 24px */
+  --text-2xl: 2rem;       /* 32px */
+  --text-3xl: 2.75rem;    /* 44px */
+  --text-4xl: 3.75rem;    /* 60px */
+  --text-5xl: 5rem;       /* 80px */
+  --text-6xl: 7rem;       /* 112px, slide hero */
+
+  /* Weights */
+  --weight-regular:  400;
+  --weight-medium:   500;
+  --weight-semibold: 600;
+  --weight-bold:     700;
+  --weight-black:    800;
+
+  /* Line heights */
+  --leading-tight:   1.02;
+  --leading-snug:    1.15;
+  --leading-normal:  1.5;
+  --leading-relaxed: 1.65;
+
+  /* Letter spacing */
+  --tracking-tight:  -0.01em;
+  --tracking-normal: 0;
+  --tracking-wide:   0.04em;
+  --tracking-wider:  0.12em;   /* eyebrows / labels / overlines */
+
+  /* The brand's signature forward slant for motion accents */
+  --slant: -8deg; /* @kind other */
+
+  /* Semantic roles */
+  --display-family: var(--font-display);
+  --display-weight: var(--weight-black);
+  --display-leading: var(--leading-tight);
+  --display-tracking: var(--tracking-tight);
+
+  --heading-family: var(--font-heading);
+  --heading-weight: var(--weight-bold);
+
+  --body-family: var(--font-body);
+  --body-leading: var(--leading-relaxed);
+
+  /* Eyebrow / kicker, Montserrat 600, widely tracked, with a leading skewed
+     tick. NOT mono, mono is reserved for real telemetry/data. */
+  --eyebrow-family: var(--font-heading);
+  --eyebrow-weight: var(--weight-semibold);
+  --eyebrow-tracking: 0.22em;
+  --eyebrow-size: var(--text-sm);
+}

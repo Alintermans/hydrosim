@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}{{ event.name }} · HydroSim Timing{% endblock %}
+{% block bodyclass %}board-page{% endblock %}
+
+{% block body %}
+<div class="board">
+  <header class="b-header">
+    <img class="b-logo" src="{{ url_for('static', filename='assets/logo-wordmark-white.svg') }}" alt="HydroTeam">
+    <div class="b-title">
+      <p class="ht-eyebrow ht-eyebrow--sky"><span>Sim racing · live timing</span></p>
+      <h1 class="ht-display">{{ event.name }}</h1>
+    </div>
+    <div class="b-live"><span class="b-live__dot"></span>LIVE</div>
+  </header>
+
+  <div class="ht-bars b-bars"><i></i><i></i><i></i></div>
+
+  <main class="b-main">
+    <section class="b-board">
+      <div class="b-board__head">
+        <h2>Leaderboard</h2>
+        <select id="car-filter" class="b-select" hidden></select>
+      </div>
+      <ol id="board-rows" class="b-rows"></ol>
+      <p id="board-empty" class="b-empty" hidden>No laps yet — go set a time.</p>
+    </section>
+
+    <aside class="b-side">
+      <h2>Latest laps</h2>
+      <ul id="recent-rows" class="b-recent"></ul>
+
+      {% if operator %}
+      <div class="b-driverbox" id="driverbox">
+        <h2>Driver in the seat</h2>
+        <p class="b-driverbox__hint">Set a name and every new lap is scored to it
+          — no popup. Leave empty to be asked after each lap.</p>
+        <div class="b-driverbox__row">
+          <input id="driver-input" list="driver-names" placeholder="Name…" autocomplete="off">
+          <datalist id="driver-names"></datalist>
+          <button id="driver-set" class="btn btn--sky">Set</button>
+          <button id="driver-clear" class="btn btn--ghost">Clear</button>
+        </div>
+        <p id="driver-current" class="b-driverbox__current"></p>
+      </div>
+      {% endif %}
+    </aside>
+  </main>
+
+  <footer class="b-footer">
+    <span>sim.hydroteam.be</span>
+    <span id="conn-state"></span>
+  </footer>
+</div>
+
+{% if operator %}
+<div id="popup" class="popup" hidden>
+  <div class="popup__card">
+    <p class="ht-eyebrow ht-eyebrow--heat"><span>Nieuwe ronde!</span></p>
+    <div id="popup-time" class="popup__time">–:––.–––</div>
+    <div id="popup-meta" class="popup__meta"></div>
+    <label class="popup__label" for="popup-name">Wie reed deze ronde?</label>
+    <input id="popup-name" list="driver-names" placeholder="Jouw naam" autocomplete="off" maxlength="80">
+    <div class="popup__actions">
+      <button id="popup-save" class="btn btn--heat">Op het bord!</button>
+      <button id="popup-discard" class="btn btn--ghost">Ronde negeren</button>
+    </div>
+    <p id="popup-queue" class="popup__queue"></p>
+  </div>
+</div>
+{% endif %}
+
+<script>
+  window.HS = {
+    event: {{ event.slug | tojson }},
+    kind: {{ event.kind | tojson }},
+    operator: {{ operator | tojson }},
+    token: {{ api_token | tojson }}
+  };
+</script>
+<script src="{{ url_for('static', filename='board.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,99 @@
+/* ===========================================================================
+   HydroTeam: Color
+   ---------------------------------------------------------------------------
+   Sampled directly from the brand logos. Three signal colors stacked like the
+   mark: orange (heat / combustion), blue (engineering / primary), sky (water /
+   hydrogen). Neutrals are tuned cool toward the blue. A derived deep navy adds
+   depth for presentation backgrounds.
+   =========================================================================== */
+
+:root {
+  /* ---- Brand core (from the logo) ---- */
+  --ht-orange: #DB5827;   /* heat, combustion, the accent. Use sparingly. */
+  --ht-blue:   #03508F;   /* primary brand blue, the wordmark color */
+  --ht-sky:    #55BEEC;   /* hydrogen / water, light accent */
+  --ht-white:  #FFFFFF;
+
+  /* ---- Orange ramp ---- */
+  --orange-50:  #FCEDE6;
+  --orange-100: #F7D2C0;
+  --orange-300: #EC8E62;
+  --orange-500: #DB5827;  /* base */
+  --orange-600: #C2491C;
+  --orange-700: #9C3914;
+
+  /* ---- Blue ramp (primary) ---- */
+  --blue-50:  #E6EFF6;
+  --blue-100: #C2D8EA;
+  --blue-300: #5C8FBE;
+  --blue-500: #03508F;    /* base */
+  --blue-600: #033F71;
+  --blue-700: #022E52;
+  --blue-900: #021E37;    /* deep navy, presentation backdrop */
+
+  /* ---- Sky ramp ---- */
+  --sky-50:  #EAF7FD;
+  --sky-100: #CCEBFA;
+  --sky-300: #8FD5F2;
+  --sky-500: #55BEEC;     /* base */
+  --sky-600: #2AA3D8;
+
+  /* ---- Sand / beige ramp (the deck's warm background) ---- */
+  --sand-50:  #FCFBF7;
+  --sand-100: #F8F7F2;    /* primary background, the team's deck bg */
+  --sand-200: #ECEAE0;
+  --sand-300: #D9D5C4;
+
+  /* ---- Cool neutral ramp ---- */
+  --ink-900: #0B1620;     /* near-black, cool */
+  --ink-800: #16252F;
+  --ink-700: #243744;
+  --ink-600: #3C515F;
+  --ink-500: #5C707D;
+  --ink-400: #8497A2;
+  --ink-300: #AEBDC6;
+  --ink-200: #D2DCE2;
+  --ink-100: #E8EEF2;
+  --ink-50:  #F4F7F9;
+
+  /* ---- Semantic feedback ---- */
+  --success: #1F9D6B;
+  --warning: #E8A317;
+  --danger:  #D2412B;
+  --info:    var(--sky-600);
+
+  /* =========================================================================
+     SEMANTIC ALIASES, prefer these in components / layouts
+     ========================================================================= */
+
+  /* Surfaces */
+  --surface-page:    var(--sand-100);   /* warm beige, the brand's default light surface */
+  --surface-sand:    var(--sand-100);
+  --surface-card:    var(--ht-white);
+  --surface-sunken:  var(--sand-200);
+  --surface-inverse: var(--blue-900);   /* dark presentation backdrop */
+  --surface-brand:   var(--blue-500);
+
+  /* Text */
+  --text-strong:   var(--ink-900);
+  --text-body:     var(--ink-700);
+  --text-muted:    var(--ink-500);
+  --text-faint:    var(--ink-400);
+  --text-on-dark:  var(--ht-white);
+  --text-on-brand: var(--ht-white);
+  --text-link:     var(--ht-blue);
+
+  /* Accent intents */
+  --accent-primary: var(--ht-blue);
+  --accent-heat:    var(--ht-orange);
+  --accent-hydro:   var(--ht-sky);
+
+  /* Lines / borders */
+  --border-subtle: var(--ink-200);
+  --border-strong: var(--ink-300);
+  --border-brand:  var(--ht-blue);
+  --border-on-dark: rgba(255, 255, 255, 0.16);
+
+  /* Focus ring */
+  --focus-ring: var(--sky-500);
+}

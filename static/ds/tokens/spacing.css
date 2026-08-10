@@ -1,0 +1,55 @@
+/* ===========================================================================
+   HydroTeam: Spacing, radius, shadow, motion
+   ---------------------------------------------------------------------------
+   The brand reads engineered + fast: tight radii (slight, never pillowy),
+   crisp shadows, snappy easing. Parallelogram skew echoes the logo bars.
+   =========================================================================== */
+
+:root {
+  /* Spacing scale (4px base) */
+  --space-0:  0;
+  --space-1:  0.25rem;   /* 4 */
+  --space-2:  0.5rem;    /* 8 */
+  --space-3:  0.75rem;   /* 12 */
+  --space-4:  1rem;      /* 16 */
+  --space-5:  1.5rem;    /* 24 */
+  --space-6:  2rem;      /* 32 */
+  --space-7:  3rem;      /* 48 */
+  --space-8:  4rem;      /* 64 */
+  --space-9:  6rem;      /* 96 */
+  --space-10: 8rem;      /* 128 */
+
+  /* Radius, engineered, restrained */
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-xl: 16px;
+  --radius-pill: 999px;
+
+  /* The signature skew (matches the logo's slanted bars). The whole system, the deck's --bar-skew included, derives its parallelogram angle from this. */
+  --skew: -18deg; /* @kind other */
+
+  /* Borders */
+  --border-width: 1px;
+  --border-width-strong: 2px;
+  --rule-accent-width: 3px;   /* the orange/blue accent rule under titles */
+
+  /* Shadows, crisp, cool-tinted, low blur */
+  --shadow-xs: 0 1px 2px rgba(11, 22, 32, 0.08);
+  --shadow-sm: 0 2px 6px rgba(11, 22, 32, 0.10);
+  --shadow-md: 0 6px 18px rgba(11, 22, 32, 0.12);
+  --shadow-lg: 0 16px 40px rgba(11, 22, 32, 0.16);
+  --shadow-brand: 0 10px 30px rgba(3, 80, 143, 0.28);
+
+  /* Motion, snappy, mechanical, no bounce */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1); /* @kind other */
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1); /* @kind other */
+  --dur-fast: 120ms; /* @kind other */
+  --dur-base: 200ms; /* @kind other */
+  --dur-slow: 360ms; /* @kind other */
+
+  /* Layout */
+  --container-max: 1200px;
+  --gutter: var(--space-5);
+}

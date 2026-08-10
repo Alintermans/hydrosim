@@ -1,0 +1,101 @@
+/* ===========================================================================
+   HydroTeam: base element styling + helper classes
+   Opt-in; consuming pages get sensible brand defaults via these utilities.
+   =========================================================================== */
+
+.ht-display {
+  font-family: var(--display-family);
+  font-weight: var(--display-weight);
+  line-height: var(--display-leading);
+  letter-spacing: var(--display-tracking);
+  text-transform: uppercase;
+  color: var(--text-strong);
+}
+
+.ht-italic {
+  font-style: italic;
+}
+
+/* Eyebrow / kicker, Montserrat, widely tracked, with the leading skewed tick.
+   Default blue (light surfaces); --sky for dark, --heat for orange.
+
+   EXPORT-SAFE: the leading tick is NO LONGER a ::before (pseudo-elements never
+   import). Place a real <img> tick as the first child and wrap the label in a
+   <span>, inside this BLOCK flex (not inline-flex, which Canva mispositions):
+     <p class="ht-eyebrow">
+       <img class="ht-tick" src="assets/svg/tick-blue.svg" alt="">
+       <span>Why we're here</span>
+     </p>
+   Pick the tick file by context: heat -> tick-orange, on-dark -> tick-sky,
+   on-light -> tick-blue. (An <img> SVG cannot inherit currentColor.) */
+.ht-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--eyebrow-family);
+  font-size: var(--eyebrow-size);
+  letter-spacing: var(--eyebrow-tracking);
+  text-transform: uppercase;
+  font-weight: var(--eyebrow-weight);
+  color: var(--ht-blue);
+}
+.ht-tick { flex: none; display: block; width: 26px; height: 3px; }
+.ht-eyebrow--sky { color: var(--ht-sky); }
+.ht-eyebrow--heat { color: var(--ht-orange); }
+
+/* The signature accent rule under a title (orange tick + blue bar).
+   SCREEN-ONLY: drawn with CSS background/::after and will drop or mis-render on
+   Canva / PowerPoint import. For export use two <img> bars instead, e.g.
+   <img src="assets/svg/rect-orange.svg" style="width:64px;height:3px"> +
+   <img src="assets/svg/rect-blue.svg"   style="width:28px;height:3px">, or the
+   SectionTitle component (motif="rule"). */
+.ht-rule {
+  display: inline-block;
+  width: 64px;
+  height: var(--rule-accent-width);
+  background: var(--ht-orange);
+  position: relative;
+}
+.ht-rule::after {
+  content: '';
+  position: absolute;
+  left: 72px;
+  top: 0;
+  width: 28px;
+  height: var(--rule-accent-width);
+  background: var(--ht-blue);
+}
+
+/* Skewed bar motif, a single logo-style slanted bar.
+   SCREEN-ONLY (CSS transform + background). For export use an <img>, e.g.
+   <img src="assets/svg/bar-blue.svg" style="width:56px;height:10px">. */
+.ht-bar {
+  display: inline-block;
+  width: 56px;
+  height: 10px;
+  transform: skewX(var(--skew));
+  background: var(--ht-blue);
+}
+.ht-bar--orange { background: var(--ht-orange); }
+.ht-bar--sky { background: var(--ht-sky); }
+
+/* The three-bar mark, a horizontal row of equal parallelograms, the brand's
+   signature divider/accent.
+   SCREEN-ONLY (CSS transform + background). For export use the single-image
+   motif <img src="assets/svg/bars.svg" style="width:120px;height:9px"> or the
+   Bars component, both of which bake the skew into the SVG. */
+.ht-bars {
+  display: inline-flex;
+  gap: 7px;
+}
+.ht-bars i {
+  display: block;
+  width: 34px;
+  height: 9px;
+  transform: skewX(var(--skew));
+}
+.ht-bars i:nth-child(1) { background: var(--ht-orange); }
+.ht-bars i:nth-child(2) { background: var(--ht-blue); }
+.ht-bars i:nth-child(3) { background: var(--ht-sky); }
+
+.ht-mono { font-family: var(--font-mono); }
