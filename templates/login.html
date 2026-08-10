@@ -1,18 +1,26 @@
 {% extends "base.html" %}
 {% block title %}Admin · HydroSim Timing{% endblock %}
-{% block bodyclass %}admin-page{% endblock %}
+{% block bodyclass %}admin-page admin-page--center{% endblock %}
 {% block body %}
-<div class="a-wrap a-wrap--narrow">
-  <div class="card">
-    <p class="ht-eyebrow"><span>HydroSim Timing</span></p>
-    <h1>Admin</h1>
-    <form method="post">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <input type="hidden" name="next" value="{{ next }}">
-      <label for="password">Password</label>
-      <input type="password" id="password" name="password" autofocus required>
-      <button class="btn btn--blue" type="submit">Sign in</button>
-    </form>
+<div class="login">
+  <div class="card card--accent login__card">
+    <div class="card__body">
+      <img class="login__logo" src="{{ url_for('static', filename='assets/logo-wordmark.svg') }}" alt="HydroTeam">
+      <p class="kicker kicker--blue">
+        <img src="{{ url_for('static', filename='assets/tick-blue.svg') }}" alt="">
+        <span>HydroSim Timing</span>
+      </p>
+      <h1 class="a-title">Admin</h1>
+      <form method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="next" value="{{ next }}">
+        <div class="field">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" autofocus required>
+        </div>
+        <button class="btn btn--primary btn--block" type="submit">Sign in</button>
+      </form>
+    </div>
   </div>
 </div>
 {% endblock %}

@@ -101,10 +101,11 @@ pytest                                   # test suite
 python -m collector --demo               # needs collector/collector.ini
 ```
 
-The UI chrome is English, visitor-facing popup text is Dutch (hydroapps
-convention: English chrome, Dutch data). Styling comes from the HydroTeam
-design system tokens in `static/ds/tokens/` — use `var(--ht-blue)` etc., no
-ad-hoc colors.
+The UI chrome is English (data — names, event titles — is whatever the team
+types, usually Dutch). Styling implements the Claude Design prototype
+(`HydroSim Timing.dc.html`, project `hydrosim design`) on the HydroTeam design
+system tokens in `static/ds/tokens/` — use `var(--ht-blue)` etc., no ad-hoc
+colors.
 
 ## Repository layout
 

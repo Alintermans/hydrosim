@@ -4,43 +4,58 @@
 {% block body %}
 <div class="a-wrap">
   <header class="a-header">
-    <h1>Laps — {{ event.name }}</h1>
+    <img src="{{ url_for('static', filename='assets/logo-wordmark.svg') }}" alt="HydroTeam" class="a-logo">
+    <span class="a-header__divider"></span>
+    <div class="a-header__titles">
+      <span class="a-kicker">{{ event.name }}</span>
+      <h1 class="a-title">Laps</h1>
+    </div>
     <div class="a-header__actions">
-      <a class="btn btn--ghost-dark" href="{{ url_for('timing.laps_csv', event_id=event.id) }}">Export CSV</a>
-      <a class="btn btn--ghost-dark" href="{{ url_for('timing.admin_events') }}">← Events</a>
+      <a class="btn btn--secondary" href="{{ url_for('timing.laps_csv', event_id=event.id) }}">Export CSV</a>
+      <a class="btn btn--ghost" href="{{ url_for('timing.admin_events') }}">← Events</a>
     </div>
   </header>
 
-  <div class="card">
+  <div class="card card--accent">
     <table class="a-table a-table--laps">
       <thead>
-        <tr><th>#</th><th>Time</th><th>Driver</th><th>Car / settings</th><th>Status</th><th></th></tr>
+        <tr><th class="col-id">#</th><th class="col-time">Time</th><th class="col-driver">Driver</th><th>Car / settings</th><th class="col-status">Status</th><th class="col-action"></th></tr>
       </thead>
       <tbody>
         {% for lap in laps %}
         <tr class="{{ 'is-discarded' if lap.discarded }}">
-          <td>{{ lap.id }}</td>
-          <td class="mono">{{ lap.lap_ms | laptime }}{% if lap.cuts %} <span class="chip chip--invalid">{{ lap.cuts }} cut{{ 's' if lap.cuts != 1 }}</span>{% endif %}</td>
+          <td class="a-mono a-muted">{{ lap.id }}</td>
           <td>
-            <form method="post" action="{{ url_for('timing.admin_lap_update', lap_id=lap.id) }}" class="inline a-rename">
+            <span class="a-time-cell">
+              <span class="a-time {{ 'a-time--dim' if lap.discarded or not lap.valid }}">{{ lap.lap_ms | laptime }}</span>
+              {% if lap.cuts %}<span class="tag tag--invalid">{{ lap.cuts }} cut{{ 's' if lap.cuts != 1 }}</span>{% endif %}
+            </span>
+          </td>
+          <td>
+            <form method="post" action="{{ url_for('timing.admin_lap_update', lap_id=lap.id) }}" class="a-rename">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <input name="driver_name" value="{{ lap.driver_name or '' }}" placeholder="(no name)">
-              <button class="btn btn--sm btn--ghost-dark" type="submit">Save</button>
+              <button class="btn btn--secondary btn--sm" type="submit">Save</button>
             </form>
           </td>
-          <td class="a-muted">{{ lap.car }}{% if lap.tyre_compound %} · {{ lap.tyre_compound }}{% endif %}
-            {% for aid in lap.aids %}<span class="chip">{{ aid }}</span>{% endfor %}</td>
           <td>
-            {% if lap.discarded %}<span class="chip chip--invalid">discarded</span>
-            {% elif not lap.valid %}<span class="chip chip--invalid">invalid</span>
-            {% elif not lap.driver_name %}<span class="chip">unnamed</span>
-            {% else %}<span class="chip chip--active">on board</span>{% endif %}
+            <span class="a-chips">
+              <span class="tag tag--car">{{ lap.car }}</span>
+              {% if lap.tyre_compound %}<span class="tag">{{ lap.tyre_compound }}</span>{% endif %}
+              {% for aid in lap.aids %}<span class="tag">{{ aid }}</span>{% endfor %}
+            </span>
+          </td>
+          <td>
+            {% if lap.discarded %}<span class="tag tag--muted">discarded</span>
+            {% elif not lap.valid %}<span class="tag tag--invalid">invalid</span>
+            {% elif not lap.driver_name %}<span class="tag tag--pending">unnamed</span>
+            {% else %}<span class="tag tag--active">on board</span>{% endif %}
           </td>
           <td>
             <form method="post" action="{{ url_for('timing.admin_lap_update', lap_id=lap.id) }}" class="inline">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <input type="hidden" name="action" value="{{ 'restore' if lap.discarded else 'discard' }}">
-              <button class="btn btn--sm btn--ghost-dark" type="submit">{{ 'Restore' if lap.discarded else 'Discard' }}</button>
+              <button class="btn btn--ghost btn--sm" type="submit">{{ 'Restore' if lap.discarded else 'Discard' }}</button>
             </form>
           </td>
         </tr>

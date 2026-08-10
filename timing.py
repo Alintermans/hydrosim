@@ -37,7 +37,7 @@ def home():
 def board(slug):
     event = Event.query.filter_by(slug=slug).first_or_404()
     return render_template("board.html", event=event, operator=False,
-                           api_token="")
+                           api_token="", qr=None)
 
 
 @timing_bp.get("/kiosk")
@@ -51,7 +51,24 @@ def kiosk():
     # only renders on the sim PC itself (127.0.0.1 + KIOSK_OPEN) or behind the
     # admin login, so handing it the token is deliberate.
     return render_template("board.html", event=event, operator=True,
-                           api_token=current_app.config["API_TOKEN"])
+                           api_token=current_app.config["API_TOKEN"],
+                           qr=_public_board_qr(event))
+
+
+def _public_board_qr(event):
+    """Data-URI QR for the public live view — the 'follow along on your phone'
+    box on the kiosk. Only exists when this instance relays somewhere public."""
+    base = current_app.config.get("UPSTREAM_URL")
+    if not base or event.kind != KIND_EVENT:
+        return None
+    try:
+        import segno
+    except ImportError:
+        return None
+    url = f"{base}/e/{event.slug}"
+    return {"img": segno.make(url, error="m").svg_data_uri(dark="#021E37",
+                                                           border=0),
+            "url": base.replace("https://", "").replace("http://", "")}
 
 
 # ----------------------------------------------------------------- admin ----
@@ -111,7 +128,10 @@ def _apply_event(event: Event) -> str | None:
 @timing_bp.route("/admin/events/new", methods=["GET", "POST"])
 @admin_required
 def event_new():
-    event = Event(name="", slug="", kind=KIND_EVENT)
+    # Column defaults only apply at flush; the form renders this unsaved
+    # instance, so give it real values instead of None-shaped fields.
+    event = Event(name="", slug="", kind=KIND_EVENT, track_filter="",
+                  car_filter="", min_lap_s=60, max_cuts=0)
     if request.method == "POST":
         error = _apply_event(event)
         if error:

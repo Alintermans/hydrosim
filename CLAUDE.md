@@ -55,9 +55,15 @@ Windows: `windows\install.ps1` once, then `windows\start.bat`
   `security.py`'s boot guard refuses production defaults; don't weaken it.
 - **Windows-compatible server code only** (the sim PC runs waitress): nothing
   Unix-only outside `gunicorn.conf.py`/`entrypoint.sh`.
-- **Style**: HydroTeam DS tokens (`static/ds/tokens/`, from the hydroapps
-  repo) — `var(--ht-blue)`, Montserrat, JetBrains Mono for lap times. English
-  chrome, Dutch visitor-facing popup text (hydroapps convention).
+- **Style**: the UI implements the Claude Design prototype (project
+  claude.ai/design/p/79407d43-…, file `HydroSim Timing.dc.html`) on the
+  HydroTeam DS tokens (`static/ds/tokens/`). The prototype is a fixed
+  1920×1080 canvas; `app.css` clamps every size from those pixels
+  (px/19.2 = vw), so the kiosk at 1080p matches the design 1:1. Dark navy +
+  water texture for kiosk/in-house, warm sand for the public event board and
+  admin. Button variants mirror the DS `Button.jsx`. Design changes start in
+  that project, then get re-implemented here — don't invent new styling
+  ad hoc.
 - Collector structs in `collector/ac_shared_memory.py` are AC 1.16 layouts,
   `_pack_ = 4` — verify against real AC before "fixing" field order. Cut
   detection and aid usage are aggregated per lap in `collector/__main__.py`.

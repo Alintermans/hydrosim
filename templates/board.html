@@ -1,79 +1,130 @@
 {% extends "base.html" %}
 {% block title %}{{ event.name }} · HydroSim Timing{% endblock %}
-{% block bodyclass %}board-page{% endblock %}
+{# The design (HydroSim Timing.dc.html) has two board faces: deep-navy with the
+   water texture for the kiosk and in-house timing, warm sand for the public
+   event page on sim.hydroteam.be. #}
+{% set dark = operator or event.kind == "inhouse" %}
+{% set inhouse = event.kind == "inhouse" %}
+{% block bodyclass %}board-page {{ "board-page--dark" if dark else "board-page--light" }}{% endblock %}
 
 {% block body %}
-<div class="board">
+<div class="board {{ "board--dark" if dark else "board--light" }} {{ "board--inhouse" if inhouse }}">
+
   <header class="b-header">
-    <img class="b-logo" src="{{ url_for('static', filename='assets/logo-wordmark-white.svg') }}" alt="HydroTeam">
+    <img class="b-logo" src="{{ url_for('static', filename='assets/logo-wordmark-white.svg' if dark else 'assets/logo-wordmark.svg') }}" alt="HydroTeam">
+    <span class="b-header__divider"></span>
     <div class="b-title">
-      <p class="ht-eyebrow ht-eyebrow--sky"><span>Sim racing · live timing</span></p>
-      <h1 class="ht-display">{{ event.name }}</h1>
+      <p class="kicker {{ "kicker--sky" if dark else "kicker--blue" }}">
+        <img src="{{ url_for('static', filename='assets/tick-sky.svg' if dark else 'assets/tick-blue.svg') }}" alt="">
+        <span>Sim racing · live timing</span>
+      </p>
+      <h1 class="b-title__name">{{ event.name }}</h1>
     </div>
-    <div class="b-live"><span class="b-live__dot"></span>LIVE</div>
+    <div class="b-live"><span class="b-live__dot"></span><span>Live</span></div>
   </header>
 
-  <div class="ht-bars b-bars"><i></i><i></i><i></i></div>
+  <div class="b-rule">
+    <img src="{{ url_for('static', filename='assets/bars.svg') }}" alt="">
+    <span class="b-rule__line"></span>
+  </div>
+
+  <div class="b-meta">
+    <div id="meta-cells" class="b-meta__cells"></div>
+    {% if inhouse %}
+    <div class="b-meta__filter">
+      <span class="b-meta__label">Filter</span>
+      <select id="car-filter"></select>
+    </div>
+    {% endif %}
+  </div>
 
   <main class="b-main">
     <section class="b-board">
       <div class="b-board__head">
         <h2>Leaderboard</h2>
-        <select id="car-filter" class="b-select" hidden></select>
+        <span class="b-board__sub">Best lap per driver</span>
       </div>
-      <ol id="board-rows" class="b-rows"></ol>
+      <ol id="board-rows" class="b-rows {{ "b-rows--chips" if inhouse else "b-rows--two-col" }}"></ol>
       <p id="board-empty" class="b-empty" hidden>No laps yet — go set a time.</p>
     </section>
 
     <aside class="b-side">
-      <h2>Latest laps</h2>
-      <ul id="recent-rows" class="b-recent"></ul>
+      <section class="b-latest">
+        <h2>Latest laps</h2>
+        <ul id="recent-rows" class="b-recent"></ul>
+      </section>
 
       {% if operator %}
-      <div class="b-driverbox" id="driverbox">
-        <h2>Driver in the seat</h2>
+      <section id="driverbox" class="b-driverbox">
+        <div class="b-driverbox__head">
+          <span class="accent-rect"></span>
+          <h2>Driver in the seat</h2>
+        </div>
         <p class="b-driverbox__hint">Set a name and every new lap is scored to it
-          — no popup. Leave empty to be asked after each lap.</p>
+          — no popup. Leave it empty to be asked after each lap.</p>
         <div class="b-driverbox__row">
           <input id="driver-input" list="driver-names" placeholder="Name…" autocomplete="off">
           <datalist id="driver-names"></datalist>
-          <button id="driver-set" class="btn btn--sky">Set</button>
-          <button id="driver-clear" class="btn btn--ghost">Clear</button>
+          <button id="driver-set" class="btn btn--inverse">Set</button>
+          <button id="driver-clear" class="btn btn--outline-light">Clear</button>
         </div>
         <p id="driver-current" class="b-driverbox__current"></p>
-      </div>
+      </section>
+      {% endif %}
+
+      {% if qr %}
+      <section class="b-qr">
+        <img class="b-qr__code" src="{{ qr.img }}" alt="QR code">
+        <div class="b-qr__text">
+          <span class="b-qr__kicker">Follow along</span>
+          <span class="b-qr__url">{{ qr.url }}</span>
+          <span class="b-qr__sub">Scan to watch the board on your phone.</span>
+        </div>
+      </section>
       {% endif %}
     </aside>
   </main>
 
   <footer class="b-footer">
-    <span>sim.hydroteam.be</span>
-    <span id="conn-state"></span>
+    <span>{{ "HydroTeam KU Leuven · Hydrogen-powered racing" if dark else "sim.hydroteam.be · HydroTeam KU Leuven" }}</span>
+    <span id="conn-state" class="b-conn"><span class="b-conn__dot"></span><span id="conn-text">Live feed connected</span></span>
   </footer>
-</div>
 
-{% if operator %}
-<div id="popup" class="popup" hidden>
-  <div class="popup__card">
-    <p class="ht-eyebrow ht-eyebrow--heat"><span>Nieuwe ronde!</span></p>
-    <div id="popup-time" class="popup__time">–:––.–––</div>
-    <div id="popup-meta" class="popup__meta"></div>
-    <label class="popup__label" for="popup-name">Wie reed deze ronde?</label>
-    <input id="popup-name" list="driver-names" placeholder="Jouw naam" autocomplete="off" maxlength="80">
-    <div class="popup__actions">
-      <button id="popup-save" class="btn btn--heat">Op het bord!</button>
-      <button id="popup-discard" class="btn btn--ghost">Ronde negeren</button>
+  {% if operator %}
+  <div id="popup" class="popup" hidden>
+    <div class="popup__card">
+      <div class="popup__strip"></div>
+      <div class="popup__body">
+        <p class="kicker kicker--heat">
+          <img src="{{ url_for('static', filename='assets/tick-orange.svg') }}" alt="">
+          <span>New lap</span>
+        </p>
+        <div class="popup__row">
+          <div id="popup-time" class="popup__time">–:––.–––</div>
+          <div id="popup-meta" class="popup__meta"></div>
+        </div>
+        <label class="popup__label" for="popup-name">Who drove this lap?</label>
+        <input id="popup-name" list="driver-names" placeholder="Type your name" autocomplete="off" maxlength="80">
+        <div class="popup__actions">
+          <button id="popup-save" class="btn btn--heat btn--hero">Put it on the board</button>
+          <button id="popup-discard" class="btn btn--outline-light btn--hero">Discard lap</button>
+        </div>
+        <p id="popup-queue" class="popup__queue" hidden>
+          <span class="popup__queue-dot"></span>
+          <span id="popup-queue-text"></span>
+        </p>
+      </div>
     </div>
-    <p id="popup-queue" class="popup__queue"></p>
   </div>
+  {% endif %}
 </div>
-{% endif %}
 
 <script>
   window.HS = {
     event: {{ event.slug | tojson }},
     kind: {{ event.kind | tojson }},
     operator: {{ operator | tojson }},
+    dark: {{ dark | tojson }},
     token: {{ api_token | tojson }}
   };
 </script>

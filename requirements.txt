@@ -4,3 +4,5 @@ Flask-WTF>=1.2
 python-dotenv>=1.0
 gunicorn>=22.0
 waitress>=3.0
+segno>=1.6
+

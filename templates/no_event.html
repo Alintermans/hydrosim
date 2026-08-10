@@ -1,10 +1,14 @@
 {% extends "base.html" %}
 {% block title %}HydroSim Timing{% endblock %}
-{% block bodyclass %}board-page{% endblock %}
+{% block bodyclass %}board-page board-page--dark{% endblock %}
 {% block body %}
-<div class="board board--center">
-  <img class="b-logo" src="{{ url_for('static', filename='assets/logo-wordmark-white.svg') }}" alt="HydroTeam">
-  <h1 class="ht-display">No active event</h1>
-  <p class="b-empty">Create and activate an event in <a href="{{ url_for('timing.admin_events') }}">the admin</a>.</p>
+<div class="noevent">
+  <img class="noevent__logo" src="{{ url_for('static', filename='assets/logo-wordmark-white.svg') }}" alt="HydroTeam">
+  <img class="noevent__bars" src="{{ url_for('static', filename='assets/bars.svg') }}" alt="">
+  <h1 class="noevent__title">No active event</h1>
+  <p class="noevent__text">The timing screen is standing by. Create and activate an
+    event in <a href="{{ url_for('timing.admin_events') }}">the admin</a> and laps
+    start landing here.</p>
+  <span class="b-conn noevent__conn"><span class="b-conn__dot"></span><span>Waiting for the simulator</span></span>
 </div>
 {% endblock %}

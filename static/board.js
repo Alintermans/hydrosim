@@ -1,6 +1,6 @@
-/* Board + kiosk logic. One source of truth: /api/state. SSE only says
-   "something changed" and triggers a refetch; a 5s poll backs it up, so a
-   dropped stream can never freeze the screen. Plain ES5-ish, no deps. */
+/* Board + kiosk logic, rendering the Claude Design markup. One source of
+   truth: /api/state. SSE only says "something changed" and triggers a refetch;
+   a 5s poll backs it up, so a dropped stream can never freeze the screen. */
 (function () {
   'use strict';
   var cfg = window.HS || {};
@@ -28,15 +28,20 @@
 
   function gap(ms, bestMs) {
     if (ms === bestMs) return '';
-    var d = (ms - bestMs) / 1000;
-    return '+' + d.toFixed(3);
+    return '+' + ((ms - bestMs) / 1000).toFixed(3);
   }
 
-  function chips(lap) {
+  function chipList(lap) {
     var out = [];
     if (lap.tyre_compound) out.push(lap.tyre_compound.replace(/\s*\(.*\)$/, ''));
     (lap.aids || []).forEach(function (a) { out.push(a); });
-    return out.map(function (c) { return '<span class="chip">' + esc(c) + '</span>'; }).join('');
+    return out;
+  }
+
+  function rowClass(rank) {
+    var cls = 'b-row';
+    if (rank <= 3) cls += ' b-row--podium b-row--p' + rank;
+    return cls;
   }
 
   function renderBoard() {
@@ -47,14 +52,16 @@
     var bestMs = board.length ? board[0].lap_ms : 0;
     var inhouse = cfg.kind === 'inhouse';
     rows.innerHTML = board.slice(0, 20).map(function (lap) {
-      var cls = 'b-row' + (lap.rank === 1 ? ' b-row--p1' : '');
-      return '<li class="' + cls + '">' +
-        '<span class="b-row__rank">' + lap.rank + '</span>' +
-        '<span class="b-row__name">' + esc(lap.driver_name) +
-        (inhouse ? '<span class="b-row__chips">' +
-          '<span class="chip chip--car">' + esc(lap.car) + '</span>' + chips(lap) +
-          '</span>' : '') +
-        '</span>' +
+      var who = inhouse
+        ? '<span class="b-row__who"><span class="b-row__name">' +
+          esc(lap.driver_name) + '</span><span class="b-row__chips">' +
+          '<span class="chip chip--car">' + esc(lap.car) + '</span>' +
+          chipList(lap).map(function (c) {
+            return '<span class="chip">' + esc(c) + '</span>';
+          }).join('') + '</span></span>'
+        : '<span class="b-row__name">' + esc(lap.driver_name) + '</span>';
+      return '<li class="' + rowClass(lap.rank) + '">' +
+        '<span class="b-row__rank">' + lap.rank + '</span>' + who +
         '<span class="b-row__gap">' + gap(lap.lap_ms, bestMs) + '</span>' +
         '<span class="b-row__time">' + esc(lap.lap_time) + '</span>' +
         '</li>';
@@ -63,22 +70,47 @@
 
   function renderRecent() {
     var ul = document.getElementById('recent-rows');
-    ul.innerHTML = (state.recent || []).map(function (lap) {
-      var name = lap.driver_name ? esc(lap.driver_name)
-        : '<em class="b-pending">waiting for name…</em>';
-      var flags = !lap.valid ? ' <span class="chip chip--invalid">' +
-        (lap.cuts > 0 ? 'cut' : 'invalid') + '</span>' : '';
-      return '<li><span class="b-recent__time">' + esc(lap.lap_time) + '</span>' +
-        '<span class="b-recent__name">' + name + flags + '</span></li>';
+    var inhouse = cfg.kind === 'inhouse';
+    ul.innerHTML = (state.recent || []).slice(0, inhouse ? 6 : 8).map(function (lap) {
+      var pending = !lap.driver_name && lap.valid;
+      var name = lap.driver_name ? esc(lap.driver_name) : 'waiting for name…';
+      var flag = !lap.valid
+        ? ' <span class="chip chip--cut">' + (lap.cuts > 0 ? 'Cut' : 'Invalid') + '</span>'
+        : '';
+      return '<li class="' + (pending ? 'is-pending' : '') + '">' +
+        '<span class="b-recent__time">' + esc(lap.lap_time) + '</span>' +
+        '<span class="b-recent__name"><span>' + name + '</span>' + flag + '</span></li>';
     }).join('');
+  }
+
+  function renderMeta() {
+    var box = document.getElementById('meta-cells');
+    if (!box || !state.event) return;
+    var stats = state.stats || {};
+    var cell = function (label, value) {
+      return '<div class="b-meta__cell"><span class="b-meta__label">' + label +
+        '</span><span class="b-meta__value">' + esc(value) + '</span></div>';
+    };
+    var cells;
+    if (cfg.kind === 'inhouse') {
+      cells = [cell('Track', state.event.track_filter || 'any'),
+               cell('Drivers', stats.drivers != null ? stats.drivers : '–'),
+               cell('Laps today', stats.laps_today != null ? stats.laps_today : '–')];
+    } else {
+      var car = state.event.car_filter ||
+        ((state.cars || []).length === 1 ? state.cars[0] : 'any');
+      cells = [cell('Track', state.event.track_filter || 'any'),
+               cell('Car', car),
+               cell('Laps today', stats.laps_today != null ? stats.laps_today : '–'),
+               cell('Drivers', stats.drivers != null ? stats.drivers : '–')];
+    }
+    box.innerHTML = cells.join('');
   }
 
   function renderCars() {
     var sel = document.getElementById('car-filter');
+    if (!sel) return;
     var cars = state.cars || [];
-    var show = cfg.kind === 'inhouse' && cars.length > 1;
-    sel.hidden = !show;
-    if (!show) return;
     var options = '<option value="">All cars</option>' + cars.map(function (c) {
       return '<option value="' + esc(c) + '"' +
         (c === carFilter ? ' selected' : '') + '>' + esc(c) + '</option>';
@@ -98,11 +130,11 @@
   }
 
   function renderDriverBox() {
-    var box = document.getElementById('driverbox');
-    if (!box) return;
     var current = document.getElementById('driver-current');
+    if (!current) return;
     var name = state.event && state.event.current_driver;
-    current.textContent = name ? ('Scoring laps to: ' + name) : 'No driver set — popup asks after each lap.';
+    current.textContent = name ? ('Scoring laps to: ' + name)
+      : 'No driver set — the popup asks after each lap.';
   }
 
   function renderPopup() {
@@ -119,12 +151,21 @@
       currentPopup = lap.client_id;
       document.getElementById('popup-name').value = '';
       document.getElementById('popup-time').textContent = lap.lap_time;
-      var meta = [lap.car, lap.track_config || lap.track].filter(Boolean).join(' · ');
-      document.getElementById('popup-meta').textContent = meta;
+      var meta = document.getElementById('popup-meta');
+      var sub = [lap.track_config || lap.track,
+                 (lap.tyre_compound || '').toLowerCase()]
+        .filter(Boolean).join(' · ');
+      meta.innerHTML = '<span>' + esc(lap.car) + '</span>' +
+        (sub ? '<span class="sub">' + esc(sub) + '</span>' : '');
     }
     var queue = document.getElementById('popup-queue');
-    queue.textContent = pending.length > 1
-      ? ('Nog ' + (pending.length - 1) + ' eerdere ronde(s) wachten op een naam.') : '';
+    var older = pending.length - 1;
+    queue.hidden = older < 1;
+    if (older >= 1) {
+      document.getElementById('popup-queue-text').textContent = older === 1
+        ? '1 older lap is still waiting for a name'
+        : older + ' older laps are still waiting for a name';
+    }
     popup.hidden = false;
     document.getElementById('popup-name').focus();
   }
@@ -133,6 +174,7 @@
     if (!state || !state.event) return;
     renderBoard();
     renderRecent();
+    renderMeta();
     renderCars();
     renderDriverNames();
     renderDriverBox();
@@ -149,7 +191,10 @@
 
   function setConn(ok) {
     var el = document.getElementById('conn-state');
-    if (el) el.textContent = ok ? '' : 'reconnecting…';
+    var text = document.getElementById('conn-text');
+    if (!el || !text) return;
+    el.classList.toggle('is-down', !ok);
+    text.textContent = ok ? 'Live feed connected' : 'Reconnecting…';
   }
 
   // --- operator actions -----------------------------------------------------
@@ -191,10 +236,13 @@
     });
   }
 
-  document.getElementById('car-filter').addEventListener('change', function () {
-    carFilter = this.value;
-    refresh();
-  });
+  var filterSel = document.getElementById('car-filter');
+  if (filterSel) {
+    filterSel.addEventListener('change', function () {
+      carFilter = this.value;
+      refresh();
+    });
+  }
 
   // --- live -----------------------------------------------------------------
   function listen() {

@@ -16,9 +16,9 @@ staat al geïnstalleerd op de sim-pc.
    *Practice* of *Hotlap*.
 
 Klaar. Elke gereden ronde verschijnt binnen een seconde op het bord, en er
-komt een **popup: "Wie reed deze ronde?"** — naam intikken, **Op het bord!**,
-en de bezoeker staat in het klassement. Uitlap of testronde van het team?
-**Ronde negeren.**
+komt een **popup: "Who drove this lap?"** — naam intikken, **Put it on the
+board**, en de bezoeker staat in het klassement. Uitlap of testronde van het
+team? **Discard lap.**
 
 Het bord staat ook live op **https://sim.hydroteam.be** — laat bezoekers de
 QR/het adres zien, dan kunnen ze thuis hun tijd terugvinden.

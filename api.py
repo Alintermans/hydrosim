@@ -214,10 +214,24 @@ def state():
                    Lap.query.filter_by(event_id=event.id, discarded=False)
                    if l.car})
 
+    from zoneinfo import ZoneInfo
+
+    from flask import current_app
+    zone = ZoneInfo(current_app.config["TIMEZONE"])
+    today = datetime.now(zone).date()
+    all_laps = Lap.query.filter_by(event_id=event.id, discarded=False).all()
+    drivers = {l.driver_name.strip().casefold() for l in all_laps if l.driver_name}
+    laps_today = sum(
+        1 for l in all_laps
+        if l.recorded_at.replace(tzinfo=timezone.utc).astimezone(zone).date() == today)
+
     payload = {
         "ok": True,
         "event": {"slug": event.slug, "name": event.name, "kind": event.kind,
-                  "current_driver": event.current_driver},
+                  "current_driver": event.current_driver,
+                  "track_filter": event.track_filter,
+                  "car_filter": event.car_filter},
+        "stats": {"laps_today": laps_today, "drivers": len(drivers)},
         "leaderboard": [
             {**lap.as_dict(), "rank": i + 1} for i, lap in enumerate(board)
         ],

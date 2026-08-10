@@ -2,53 +2,84 @@
 {% block title %}{{ "New event" if is_new else event.name }} · HydroSim Timing{% endblock %}
 {% block bodyclass %}admin-page{% endblock %}
 {% block body %}
-<div class="a-wrap a-wrap--narrow">
-  <div class="card">
-    <p class="ht-eyebrow"><span>{{ "New event" if is_new else "Edit event" }}</span></p>
-    <h1>{{ event.name or "New event" }}</h1>
-    <form method="post" class="a-form">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<div class="a-wrap">
+  <header class="a-header">
+    <img src="{{ url_for('static', filename='assets/logo-wordmark.svg') }}" alt="HydroTeam" class="a-logo">
+    <span class="a-header__divider"></span>
+    <span class="a-kicker">HydroSim Timing · admin</span>
+  </header>
 
-      <label for="name">Name (shown on the big screen)</label>
-      <input id="name" name="name" value="{{ event.name }}" required
-             placeholder="Open Bedrijvendag — Spa Challenge">
+  <div class="card card--accent a-form-card">
+    <div class="card__body">
+      <p class="kicker kicker--blue">
+        <img src="{{ url_for('static', filename='assets/tick-blue.svg') }}" alt="">
+        <span>{{ "New event" if is_new else "Edit event" }}</span>
+      </p>
+      <h1 class="a-title">{{ event.name or "New event" }}</h1>
 
-      <label for="slug">Slug (the URL: /e/&lt;slug&gt;)</label>
-      <input id="slug" name="slug" value="{{ event.slug }}" required
-             placeholder="openbedrijvendag-2026" pattern="[a-z0-9-]+">
+      <form method="post" class="a-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-      <label for="kind">Kind</label>
-      <select id="kind" name="kind">
-        <option value="event" {{ "selected" if event.kind == "event" }}>event — public leaderboard (names only)</option>
-        <option value="inhouse" {{ "selected" if event.kind == "inhouse" }}>inhouse — team timing (car, tyres &amp; aids shown, car filter)</option>
-      </select>
-
-      <label for="track_filter">Track filter — laps on other tracks are refused ("spa" matches every Spa layout; empty = any track)</label>
-      <input id="track_filter" name="track_filter" value="{{ event.track_filter }}" placeholder="spa">
-
-      <label for="car_filter">Car filter (substring of the AC car id; empty = any car)</label>
-      <input id="car_filter" name="car_filter" value="{{ event.car_filter }}" placeholder="">
-
-      <div class="a-form__row">
-        <div>
-          <label for="min_lap_s">Minimum lap time (s) — anything faster is marked invalid</label>
-          <input id="min_lap_s" name="min_lap_s" type="number" min="0" value="{{ event.min_lap_s }}">
+        <div class="field">
+          <label for="name">Name</label>
+          <span class="field__hint">Shown on the big screen.</span>
+          <input id="name" name="name" value="{{ event.name }}" required
+                 placeholder="Open Bedrijvendag — Spa Challenge">
         </div>
-        <div>
-          <label for="max_cuts">Allowed cuts per lap</label>
-          <input id="max_cuts" name="max_cuts" type="number" min="0" value="{{ event.max_cuts }}">
+
+        <div class="field">
+          <label for="slug">Slug</label>
+          <span class="field__hint">The public URL: /e/&lt;slug&gt;</span>
+          <input id="slug" name="slug" class="mono" value="{{ event.slug }}" required
+                 placeholder="openbedrijvendag-2026" pattern="[a-z0-9-]+">
         </div>
-      </div>
 
-      {% if is_new %}
-      <label class="a-check"><input type="checkbox" name="activate" checked> Make this the active event right away</label>
-      {% endif %}
+        <div class="field">
+          <label for="kind">Kind</label>
+          <select id="kind" name="kind">
+            <option value="event" {{ "selected" if event.kind == "event" }}>event — public leaderboard (names only)</option>
+            <option value="inhouse" {{ "selected" if event.kind == "inhouse" }}>inhouse — team timing (car, tyres &amp; aids shown, car filter)</option>
+          </select>
+        </div>
 
-      <div class="a-form__actions">
-        <button class="btn btn--blue" type="submit">Save</button>
-        <a class="btn btn--ghost-dark" href="{{ url_for('timing.admin_events') }}">Cancel</a>
-      </div>
-    </form>
+        <div class="field">
+          <label for="track_filter">Track filter</label>
+          <span class="field__hint">Laps on other tracks are refused. "spa" matches every Spa layout; empty = any track.</span>
+          <input id="track_filter" name="track_filter" class="mono" value="{{ event.track_filter }}" placeholder="spa">
+        </div>
+
+        <div class="field">
+          <label for="car_filter">Car filter</label>
+          <span class="field__hint">Substring of the AC car id; empty = any car.</span>
+          <input id="car_filter" name="car_filter" class="mono" value="{{ event.car_filter }}" placeholder="tatuus_fa01">
+        </div>
+
+        <div class="a-form__row">
+          <div class="field">
+            <label for="min_lap_s">Minimum lap time (s)</label>
+            <span class="field__hint">Anything faster is marked invalid.</span>
+            <input id="min_lap_s" name="min_lap_s" class="mono" type="number" min="0" value="{{ event.min_lap_s }}">
+          </div>
+          <div class="field">
+            <label for="max_cuts">Allowed cuts per lap</label>
+            <span class="field__hint">Above this the lap is invalid.</span>
+            <input id="max_cuts" name="max_cuts" class="mono" type="number" min="0" value="{{ event.max_cuts }}">
+          </div>
+        </div>
+
+        {% if is_new %}
+        <label class="a-check">
+          <input type="checkbox" name="activate" checked>
+          <span>Make this the active event right away</span>
+        </label>
+        {% endif %}
+
+        <div class="a-form__actions">
+          <button class="btn btn--primary" type="submit">Save event</button>
+          <a class="btn btn--ghost" href="{{ url_for('timing.admin_events') }}">Cancel</a>
+        </div>
+      </form>
+    </div>
   </div>
 </div>
 {% endblock %}
