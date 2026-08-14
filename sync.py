@@ -150,7 +150,7 @@ def _run(app) -> None:
                         "track_filter": ev.track_filter, "car_filter": ev.car_filter,
                         "min_lap_s": ev.min_lap_s, "max_cuts": ev.max_cuts,
                     },
-                    "laps": [l.as_dict() for l in batch],
+                    "laps": [l.as_dict(include_trace=True) for l in batch],
                 }
                 if _post(url, token, "/api/sync/laps", payload) is not None:
                     for l in batch:

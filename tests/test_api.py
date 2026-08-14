@@ -110,3 +110,24 @@ def test_driver_laps_detail(client, auth, event):
     assert client.get("/api/driver-laps?event=nope&name=Anton").status_code == 404
     empty = client.get("/api/driver-laps?event=spa-test&name=Niemand").get_json()
     assert empty["laps"] == []
+
+
+def test_trace_roundtrip(client, auth, event):
+    trace = {"t": list(range(0, 120000, 1000)),
+             "x": [float(i) for i in range(120)],
+             "z": [float(i % 7) for i in range(120)]}
+    client.post("/api/current-driver", json={"name": "Anton"}, headers=auth)
+    client.post("/api/laps", json=lap_payload(trace=trace), headers=auth)
+
+    state = client.get("/api/state").get_json()
+    assert "trace" not in state["leaderboard"][0]  # board payload stays light
+    laps = client.get("/api/driver-laps?event=spa-test&name=Anton").get_json()["laps"]
+    assert len(laps[0]["trace"]["t"]) == 120
+
+    # Malformed traces are dropped, never stored.
+    client.post("/api/laps",
+                json=lap_payload(trace={"t": [1], "x": [1], "z": [1]},
+                                 recorded_at="2026-08-29T15:00:00+00:00"),
+                headers=auth)
+    laps = client.get("/api/driver-laps?event=spa-test&name=Anton").get_json()["laps"]
+    assert "trace" not in laps[0]  # newest first: the malformed one

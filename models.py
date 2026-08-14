@@ -11,6 +11,7 @@ does. `client_id` is the idempotency key that lets the local instance re-send
 a lap to the cloud instance any number of times.
 """
 
+import json
 from datetime import datetime, timezone
 
 from flask_sqlalchemy import SQLAlchemy
@@ -118,6 +119,12 @@ class Lap(db.Model):
     # on sim.hydroteam.be at the same time; the later answer wins everywhere.
     assigned_at = db.Column(db.DateTime, nullable=True)
 
+    # The lap's spatial trace: JSON {"t": [...], "x": [...], "z": [...]} —
+    # elapsed ms and world coordinates at N uniform points along the track
+    # spline. Feeds the detail card's circuit map (where you gain/lose time
+    # vs P1). Nullable: demo laps and pre-feature laps simply have none.
+    trace = db.Column(db.Text, nullable=True)
+
     # Local instance only: False until the upstream relay has delivered this
     # row (again). Assigning a name flips it back to False so the update ships.
     synced = db.Column(db.Boolean, nullable=False, default=False)
@@ -144,8 +151,8 @@ class Lap(db.Model):
             out.append("LINE")
         return out
 
-    def as_dict(self) -> dict:
-        return {
+    def as_dict(self, include_trace: bool = False) -> dict:
+        out = {
             "client_id": self.client_id,
             "driver_name": self.driver_name,
             "lap_ms": self.lap_ms,
@@ -175,6 +182,12 @@ class Lap(db.Model):
             "assigned_at": (self.assigned_at.isoformat() + "Z"
                             if self.assigned_at else None),
         }
+        if include_trace and self.trace:
+            try:
+                out["trace"] = json.loads(self.trace)
+            except ValueError:
+                pass
+        return out
 
 
 def format_ms(ms) -> str:

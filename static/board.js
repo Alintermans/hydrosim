@@ -171,6 +171,7 @@
         (sub ? '<span class="sub">' + esc(sub) + '</span>' : '');
     }
     closeDetail(); // the name popup takes priority over a browsing detour
+    closeRanking();
     var queue = document.getElementById('popup-queue');
     var older = pending.length - 1;
     queue.hidden = older < 1;
@@ -185,11 +186,18 @@
 
   // --- driver detail card (click a name on the board) -----------------------
   var detailTimer = null;
+  var rankingTimer = null;
 
   function closeDetail() {
     var el = document.getElementById('detail');
     if (el) el.hidden = true;
     if (detailTimer) { clearTimeout(detailTimer); detailTimer = null; }
+  }
+
+  function closeRanking() {
+    var el = document.getElementById('ranking');
+    if (el) el.hidden = true;
+    if (rankingTimer) { clearTimeout(rankingTimer); rankingTimer = null; }
   }
 
   function fmtClock(iso) {
@@ -204,7 +212,71 @@
       label + '</span><span class="detail__stat-value">' + value + '</span></div>';
   }
 
-  function buildDetail(name, laps) {
+  // --- circuit map: where the lap gains or loses time vs P1 -----------------
+  var COL_MID = [62, 88, 112], COL_SKY = [85, 190, 236], COL_HEAT = [219, 88, 39];
+
+  function lerpColor(a, b, f) {
+    return 'rgb(' + a.map(function (v, i) {
+      return Math.round(v + (b[i] - v) * f);
+    }).join(',') + ')';
+  }
+
+  function segColor(diffMs) {
+    var f = Math.max(-1, Math.min(1, diffMs / 120)); // ±120 ms per segment
+    return f < 0 ? lerpColor(COL_MID, COL_SKY, -f) : lerpColor(COL_MID, COL_HEAT, f);
+  }
+
+  function bestTraceLap(laps, wantMs) {
+    var have = (laps || []).filter(function (l) { return l.trace && l.valid; });
+    if (!have.length) return null;
+    for (var i = 0; i < have.length; i++) {
+      if (have[i].lap_ms === wantMs) return have[i];
+    }
+    have.sort(function (a, b) { return a.lap_ms - b.lap_ms; });
+    return have[0];
+  }
+
+  function buildMap(you, leader, isLeader) {
+    var geo = (leader && leader.trace) || (you && you.trace);
+    if (!geo) return '';
+    var k = geo.x.length;
+    var minX = Math.min.apply(null, geo.x), maxX = Math.max.apply(null, geo.x);
+    var minZ = Math.min.apply(null, geo.z), maxZ = Math.max.apply(null, geo.z);
+    var W = 560, H = 340, P = 24;
+    var s = Math.min((W - 2 * P) / ((maxX - minX) || 1),
+                     (H - 2 * P) / ((maxZ - minZ) || 1));
+    var ox = (W - (maxX - minX) * s) / 2, oz = (H - (maxZ - minZ) * s) / 2;
+    function px(i) { return ((geo.x[i] - minX) * s + ox).toFixed(1); }
+    function pz(i) { return ((geo.z[i] - minZ) * s + oz).toFixed(1); }
+    var compare = !isLeader && you && you.trace && leader && leader.trace;
+    var segs = '';
+    for (var i = 0; i < k; i++) {
+      var j = (i + 1) % k;
+      var col = '#55BEEC';
+      if (compare) {
+        var dtY = (j ? you.trace.t[j] : you.lap_ms) - you.trace.t[i];
+        var dtL = (j ? leader.trace.t[j] : leader.lap_ms) - leader.trace.t[i];
+        col = segColor(dtY - dtL);
+      }
+      segs += '<line x1="' + px(i) + '" y1="' + pz(i) + '" x2="' + px(j) +
+        '" y2="' + pz(j) + '" stroke="' + col +
+        '" stroke-width="9" stroke-linecap="round"/>';
+    }
+    var start = '<circle cx="' + px(0) + '" cy="' + pz(0) +
+      '" r="7" fill="#021E37" stroke="#FFFFFF" stroke-width="3"/>';
+    var legend = compare
+      ? '<span class="detail__legend"><i style="background:#55BEEC"></i>faster than P1' +
+        '<i style="background:#DB5827"></i>slower than P1</span>'
+      : '<span class="detail__legend">' +
+        (isLeader ? 'The benchmark lap — everyone is compared to this one.'
+                  : 'No comparison available yet.') + '</span>';
+    return '<div class="detail__mapwrap"><div class="detail__attempts">' +
+      '<h4>Circuit · vs P1</h4>' + legend + '</div>' +
+      '<svg class="detail__map" viewBox="0 0 ' + W + ' ' + H +
+      '" role="img">' + segs + start + '</svg></div>';
+  }
+
+  function buildDetail(name, laps, leaderLaps) {
     var entry = null;
     (state.leaderboard || []).forEach(function (l) {
       if (l.driver_name === name) entry = l;
@@ -248,6 +320,13 @@
       if (improved > 0) summary += ' · improved ' + (improved / 1000).toFixed(3) + 's';
     }
 
+    var isLeader = entry.rank === 1;
+    var youLap = bestTraceLap(laps, entry.lap_ms);
+    var leaderEntry = board[0];
+    var leaderLap = isLeader ? youLap
+      : bestTraceLap(leaderLaps, leaderEntry ? leaderEntry.lap_ms : 0);
+    var mapHtml = buildMap(youLap, leaderLap, isLeader);
+
     var history = laps.slice(0, 10).map(function (l) {
       var tag = '';
       if (l.lap_ms === entry.lap_ms && l.valid) {
@@ -270,29 +349,66 @@
       '<span class="detail__time">' + esc(entry.lap_time) + '</span></div>' +
       '<div class="detail__chips">' + chipsHtml + '</div>' +
       '<div class="detail__stats">' + stats.join('') + '</div>' +
+      mapHtml +
       '<div class="detail__attempts"><h4>Attempts</h4>' +
       '<span class="detail__summary">' + summary + '</span></div>' +
       '<ul class="detail__laps">' + history + '</ul>' + more;
   }
 
-  function openDetail(name) {
-    fetch('/api/driver-laps?event=' + encodeURIComponent(cfg.event) +
-          '&name=' + encodeURIComponent(name))
+  function fetchLaps(name) {
+    return fetch('/api/driver-laps?event=' + encodeURIComponent(cfg.event) +
+                 '&name=' + encodeURIComponent(name))
       .then(function (r) { return r.json(); })
-      .then(function (data) {
-        if (!data || !data.ok) return;
-        var html = buildDetail(name, data.laps || []);
-        if (!html) return;
-        document.getElementById('detail-body').innerHTML = html;
-        document.getElementById('detail').hidden = false;
-        if (detailTimer) clearTimeout(detailTimer);
-        if (cfg.operator) { // kiosk: never leave the board hidden for long
-          detailTimer = setTimeout(closeDetail, 45000);
-        }
-      });
+      .then(function (d) { return (d && d.ok && d.laps) || []; })
+      .catch(function () { return []; });
+  }
+
+  function openDetail(name) {
+    var leaderName = ((state.leaderboard || [])[0] || {}).driver_name;
+    var wants = [fetchLaps(name)];
+    if (leaderName && leaderName !== name) wants.push(fetchLaps(leaderName));
+    Promise.all(wants).then(function (results) {
+      var html = buildDetail(name, results[0], results[1] || []);
+      if (!html) return;
+      closeRanking();
+      document.getElementById('detail-body').innerHTML = html;
+      document.getElementById('detail').hidden = false;
+      if (detailTimer) clearTimeout(detailTimer);
+      if (cfg.operator) { // kiosk: never leave the board hidden for long
+        detailTimer = setTimeout(closeDetail, 45000);
+      }
+    });
+  }
+
+  // --- full-ranking modal ---------------------------------------------------
+  function renderRankingList() {
+    var ol = document.getElementById('ranking-list');
+    if (!ol) return;
+    var board = state.leaderboard || [];
+    var bestMs = board.length ? board[0].lap_ms : 0;
+    setHTML(ol, board.map(function (lap) {
+      return '<li data-driver="' + esc(lap.driver_name) + '"' +
+        (lap.rank <= 3 ? ' class="is-podium"' : '') + '>' +
+        '<span class="ranking__rank">' + lap.rank + '</span>' +
+        '<span class="ranking__name">' + esc(lap.driver_name) + '</span>' +
+        '<span class="ranking__gap">' + gap(lap.lap_ms, bestMs) + '</span>' +
+        '<span class="ranking__time">' + esc(lap.lap_time) + '</span></li>';
+    }).join(''));
+  }
+
+  function openRanking() {
+    if (!state || !(state.leaderboard || []).length) return;
+    renderRankingList();
+    document.getElementById('ranking').hidden = false;
+    if (rankingTimer) clearTimeout(rankingTimer);
+    if (cfg.operator) rankingTimer = setTimeout(closeRanking, 60000);
   }
 
   document.getElementById('board-rows').addEventListener('click', function (e) {
+    var row = e.target.closest('li[data-driver]');
+    if (row) openDetail(row.getAttribute('data-driver'));
+  });
+  document.getElementById('ranking-list').addEventListener('click', function (e) {
     var row = e.target.closest('li[data-driver]');
     if (row) openDetail(row.getAttribute('data-driver'));
   });
@@ -300,8 +416,13 @@
   document.getElementById('detail').addEventListener('click', function (e) {
     if (e.target === this) closeDetail();
   });
+  document.getElementById('ranking-btn').addEventListener('click', openRanking);
+  document.getElementById('ranking-close').addEventListener('click', closeRanking);
+  document.getElementById('ranking').addEventListener('click', function (e) {
+    if (e.target === this) closeRanking();
+  });
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') closeDetail();
+    if (e.key === 'Escape') { closeDetail(); closeRanking(); }
   });
 
   function render() {
@@ -313,6 +434,10 @@
     renderDriverNames();
     renderDriverBox();
     renderPopup();
+    var btn = document.getElementById('ranking-btn');
+    if (btn) btn.hidden = !(state.leaderboard || []).length;
+    var ranking = document.getElementById('ranking');
+    if (ranking && !ranking.hidden) renderRankingList(); // stays live
   }
 
   function refresh() {

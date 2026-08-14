@@ -49,6 +49,26 @@ def _incoming_wins(incoming_at: datetime | None, stored_at: datetime | None) -> 
     return stored_at is None or incoming_at >= stored_at
 
 
+def _clean_trace(value) -> str | None:
+    """Validate a collector trace ({"t","x","z"}: equal-length numeric lists,
+    bounded) and return it re-serialised, or None. Never trust the wire."""
+    import json
+    if not isinstance(value, dict):
+        return None
+    arrays = []
+    for key in ("t", "x", "z"):
+        arr = value.get(key)
+        if (not isinstance(arr, list) or not 24 <= len(arr) <= 400
+                or not all(isinstance(v, (int, float)) for v in arr)):
+            return None
+        arrays.append(arr)
+    if len({len(a) for a in arrays}) != 1:
+        return None
+    return json.dumps({"t": [int(v) for v in arrays[0]],
+                       "x": [round(float(v), 1) for v in arrays[1]],
+                       "z": [round(float(v), 1) for v in arrays[2]]})
+
+
 def _lap_fields(data: dict) -> dict:
     """The sim-context columns, straight from the payload with safe defaults."""
     def f(key, default=None, cast=None):
@@ -81,6 +101,7 @@ def _lap_fields(data: dict) -> dict:
         "grip": f("grip", None, float),
         "session_type": str(f("session_type", ""))[:24],
         "recorded_at": _parse_recorded_at(data.get("recorded_at")),
+        "trace": _clean_trace(data.get("trace")),
     }
 
 
@@ -322,7 +343,7 @@ def driver_laps():
             .order_by(Lap.recorded_at.desc())
             if (l.driver_name or "").strip().casefold() == key]
     return jsonify({"ok": True, "driver": name,
-                    "laps": [l.as_dict() for l in laps]})
+                    "laps": [l.as_dict(include_trace=True) for l in laps]})
 
 
 @api_bp.get("/stream")

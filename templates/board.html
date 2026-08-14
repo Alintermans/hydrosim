@@ -42,7 +42,10 @@
     <section class="b-board">
       <div class="b-board__head">
         <h2>Leaderboard</h2>
-        <span class="b-board__sub">Best lap per driver</span>
+        <span class="b-board__tools">
+          <span class="b-board__sub">Best lap per driver</span>
+          <button id="ranking-btn" class="b-board__btn" hidden>Full ranking</button>
+        </span>
       </div>
       <ol id="board-rows" class="b-rows {{ "b-rows--chips" if inhouse else "b-rows--two-col" }}"></ol>
       <p id="board-empty" class="b-empty" hidden>No laps yet — go set a time.</p>
@@ -95,6 +98,17 @@
       <div class="detail__strip"></div>
       <button id="detail-close" class="detail__close" aria-label="Close">×</button>
       <div id="detail-body" class="detail__body"></div>
+    </div>
+  </div>
+
+  <div id="ranking" class="detail" hidden>
+    <div class="detail__card detail__card--narrow">
+      <div class="detail__strip"></div>
+      <button id="ranking-close" class="detail__close" aria-label="Close">×</button>
+      <div class="detail__body">
+        <p class="kicker kicker--sky detail__kicker"><span>Full ranking</span></p>
+        <ol id="ranking-list" class="ranking"></ol>
+      </div>
     </div>
   </div>
 

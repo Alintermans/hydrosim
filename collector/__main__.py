@@ -12,8 +12,10 @@ Configuration: collector.ini next to this package (see collector.example.ini).
 """
 
 import argparse
+import bisect
 import configparser
 import json
+import math
 import random
 import sys
 import time
@@ -103,6 +105,39 @@ def submit(cfg: dict, payload: dict) -> None:
         enqueue(cfg, payload)
 
 
+# ------------------------------------------------------------------ traces --
+
+TRACE_POINTS = 120
+
+
+def resample_trace(samples: list, k: int = TRACE_POINTS) -> dict | None:
+    """(spline_pos, elapsed_ms, x, z) samples -> k points at uniform spline
+    positions. Feeds the board's circuit map (time gained/lost vs P1). Returns
+    None unless the samples genuinely cover a full lap."""
+    if len(samples) < 40:
+        return None
+    samples = sorted(samples, key=lambda s: s[0])
+    if samples[0][0] > 0.05 or samples[-1][0] < 0.95:
+        return None
+    positions = [s[0] for s in samples]
+    t, x, z = [], [], []
+    for i in range(k):
+        p = i / k
+        j = bisect.bisect_left(positions, p)
+        if j <= 0:
+            s0 = s1 = samples[0]
+        elif j >= len(samples):
+            s0 = s1 = samples[-1]
+        else:
+            s0, s1 = samples[j - 1], samples[j]
+        span = (s1[0] - s0[0]) or 1e-9
+        f = min(1.0, max(0.0, (p - s0[0]) / span))
+        t.append(int(s0[1] + (s1[1] - s0[1]) * f))
+        x.append(round(s0[2] + (s1[2] - s0[2]) * f, 1))
+        z.append(round(s0[3] + (s1[3] - s0[3]) * f, 1))
+    return {"t": t, "x": x, "z": z}
+
+
 # ---------------------------------------------------------------- real run --
 
 def run_real(cfg: dict) -> None:
@@ -122,10 +157,12 @@ def run_real(cfg: dict) -> None:
     off_track = False
     abs_used = tc_used = False
     ai_seen = False
+    samples = []              # (spline_pos, elapsed_ms, x, z) for the trace
 
     def reset_aggregates():
-        nonlocal cuts, off_track, abs_used, tc_used, ai_seen
+        nonlocal cuts, off_track, abs_used, tc_used, ai_seen, samples
         cuts, off_track, abs_used, tc_used, ai_seen = 0, False, False, False, False
+        samples = []
 
     while True:
         time.sleep(interval)
@@ -162,11 +199,17 @@ def run_real(cfg: dict) -> None:
         if now_off and not off_track:
             cuts += 1
         off_track = now_off
+        if g.iCurrentTime > 0:
+            samples.append((float(g.normalizedCarPosition),
+                            int(g.iCurrentTime),
+                            float(g.carCoordinates[0]),
+                            float(g.carCoordinates[2])))
 
         if g.completedLaps > baseline_laps:
             lap_ms = int(g.iLastTime)
             s = sm.static.read()
             lap_cuts, lap_abs, lap_tc, lap_ai = cuts, abs_used, tc_used, ai_seen
+            trace = resample_trace(samples)
             baseline_laps = g.completedLaps
             reset_aggregates()
 
@@ -200,13 +243,37 @@ def run_real(cfg: dict) -> None:
                 "session_type": SESSION_NAMES.get(g.session, ""),
                 "recorded_at": datetime.now(timezone.utc).isoformat(),
             }
+            if trace:
+                payload["trace"] = trace
             mins, rest = divmod(lap_ms, 60_000)
             log(f"LAP {mins}:{rest // 1000:02d}.{rest % 1000:03d}  "
-                f"{s.carModel} @ {s.track} cuts={lap_cuts}")
+                f"{s.carModel} @ {s.track} cuts={lap_cuts}"
+                f"{' +trace' if trace else ''}")
             submit(cfg, payload)
 
 
 # ---------------------------------------------------------------- demo run --
+
+def demo_trace(lap_ms: int) -> dict:
+    """A plausible closed circuit with per-lap pace variation, so the detail
+    card's map works in rehearsals without Assetto Corsa."""
+    k = TRACE_POINTS
+    speeds = [1.0 + 0.30 * math.sin(i / k * 6 * math.pi + 1.3)
+              + random.uniform(-0.12, 0.12) for i in range(k)]
+    inv = [1.0 / s for s in speeds]
+    total = sum(inv)
+    t, acc = [], 0.0
+    for v in inv:
+        t.append(int(acc))
+        acc += v / total * lap_ms
+    x, z = [], []
+    for i in range(k):
+        a = i / k * 2 * math.pi
+        r = 1.0 + 0.35 * math.sin(2 * a) + 0.15 * math.cos(3 * a)
+        x.append(round(500 + 300 * r * math.cos(a), 1))
+        z.append(round(400 + 220 * r * math.sin(a), 1))
+    return {"t": t, "x": x, "z": z}
+
 
 def run_demo(cfg: dict) -> None:
     """No AC needed: a plausible Spa lap every ~25 s. For testing the whole
@@ -233,6 +300,7 @@ def run_demo(cfg: dict) -> None:
             "air_temp": 21.0, "road_temp": 27.0, "grip": 0.98,
             "session_type": "practice",
             "recorded_at": datetime.now(timezone.utc).isoformat(),
+            "trace": demo_trace(lap_ms),
         }
         mins, rest = divmod(lap_ms, 60_000)
         log(f"DEMO LAP {mins}:{rest // 1000:02d}.{rest % 1000:03d}")

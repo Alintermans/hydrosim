@@ -86,6 +86,7 @@ def ensure_schema(app) -> None:
         return
     with db.engine.connect() as conn:
         cols = {row[1] for row in conn.execute(text("PRAGMA table_info(laps)"))}
-        if "assigned_at" not in cols:
-            conn.execute(text("ALTER TABLE laps ADD COLUMN assigned_at DATETIME"))
-            conn.commit()
+        for name, ddl in [("assigned_at", "DATETIME"), ("trace", "TEXT")]:
+            if name not in cols:
+                conn.execute(text(f"ALTER TABLE laps ADD COLUMN {name} {ddl}"))
+        conn.commit()
