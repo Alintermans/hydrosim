@@ -83,7 +83,9 @@
     var inhouse = cfg.kind === 'inhouse';
     setHTML(ul, (state.recent || []).slice(0, inhouse ? 6 : 8).map(function (lap) {
       var pending = !lap.driver_name && lap.valid;
-      var name = lap.driver_name ? esc(lap.driver_name) : 'waiting for name…';
+      // Invalid laps never get the popup, so don't promise a name for them.
+      var name = lap.driver_name ? esc(lap.driver_name)
+        : (lap.valid ? 'waiting for name…' : '–');
       var flag = !lap.valid
         ? ' <span class="chip chip--cut">' + (lap.cuts > 0 ? 'Cut' : 'Invalid') + '</span>'
         : '';

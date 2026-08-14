@@ -229,7 +229,17 @@ a { color: var(--text-link); }
   color: var(--ht-white); }
 .b-row--p1 .b-row__time { font-size: clamp(28px, 3.96vw, 76px); }
 
-.b-row__chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.b-row__chips { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
+
+/* In-house rows outside the podium: name and chips on ONE line, so the row
+   compresses on a locked viewport like a plain row instead of clipping the
+   stacked chips and half the lap time. Chips truncate before the name does. */
+.b-rows--chips .b-row:not(.b-row--podium) .b-row__who {
+  flex-direction: row; align-items: center; gap: clamp(8px, 0.8vw, 14px); }
+.b-rows--chips .b-row:not(.b-row--podium) .b-row__name { flex: none;
+  max-width: 60%; }
+.b-rows--chips .b-row:not(.b-row--podium) .b-row__chips {
+  flex-wrap: nowrap; overflow: hidden; }
 .chip { font-family: var(--font-mono); font-weight: var(--weight-medium);
   font-size: clamp(11px, 0.78vw, 15px); letter-spacing: 0.04em;
   white-space: nowrap; color: var(--ink-300);
