@@ -305,6 +305,26 @@ def state():
     return jsonify(payload)
 
 
+@api_bp.get("/driver-laps")
+def driver_laps():
+    """Every lap one driver drove this event — feeds the click-a-name detail
+    card on the board. Same visibility as the board itself: non-discarded
+    laps, matched case-insensitively the way the leaderboard dedupes."""
+    slug = request.args.get("event", "")
+    name = (request.args.get("name") or "").strip()
+    event = (Event.query.filter_by(slug=slug).first() if slug
+             else Event.active_event())
+    if event is None or not name:
+        return jsonify({"ok": False, "error": "unknown event or driver"}), 404
+    key = name.casefold()
+    laps = [l for l in
+            Lap.query.filter_by(event_id=event.id, discarded=False)
+            .order_by(Lap.recorded_at.desc())
+            if (l.driver_name or "").strip().casefold() == key]
+    return jsonify({"ok": True, "driver": name,
+                    "laps": [l.as_dict() for l in laps]})
+
+
 @api_bp.get("/stream")
 def stream():
     resp = Response(stream_with_context(live.stream()),

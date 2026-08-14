@@ -70,7 +70,8 @@
             return '<span class="chip">' + esc(c) + '</span>';
           }).join('') + '</span></span>'
         : '<span class="b-row__name">' + esc(lap.driver_name) + '</span>';
-      return '<li class="' + rowClass(lap.rank) + '">' +
+      return '<li class="' + rowClass(lap.rank) + '" data-driver="' +
+        esc(lap.driver_name) + '">' +
         '<span class="b-row__rank">' + lap.rank + '</span>' + who +
         '<span class="b-row__gap">' + gap(lap.lap_ms, bestMs) + '</span>' +
         '<span class="b-row__time">' + esc(lap.lap_time) + '</span>' +
@@ -169,6 +170,7 @@
       meta.innerHTML = '<span>' + esc(lap.car) + '</span>' +
         (sub ? '<span class="sub">' + esc(sub) + '</span>' : '');
     }
+    closeDetail(); // the name popup takes priority over a browsing detour
     var queue = document.getElementById('popup-queue');
     var older = pending.length - 1;
     queue.hidden = older < 1;
@@ -180,6 +182,127 @@
     popup.hidden = false;
     document.getElementById('popup-name').focus();
   }
+
+  // --- driver detail card (click a name on the board) -----------------------
+  var detailTimer = null;
+
+  function closeDetail() {
+    var el = document.getElementById('detail');
+    if (el) el.hidden = true;
+    if (detailTimer) { clearTimeout(detailTimer); detailTimer = null; }
+  }
+
+  function fmtClock(iso) {
+    try {
+      return new Date(iso).toLocaleTimeString('nl-BE',
+        { hour: '2-digit', minute: '2-digit' });
+    } catch (e) { return ''; }
+  }
+
+  function statCell(label, value) {
+    return '<div class="detail__stat"><span class="detail__stat-label">' +
+      label + '</span><span class="detail__stat-value">' + value + '</span></div>';
+  }
+
+  function buildDetail(name, laps) {
+    var entry = null;
+    (state.leaderboard || []).forEach(function (l) {
+      if (l.driver_name === name) entry = l;
+    });
+    if (!entry || !laps.length) return '';
+    var board = state.leaderboard;
+    var subs = ['P' + entry.rank];
+    if (entry.rank === 1) {
+      subs.push('fastest lap of the event');
+    } else {
+      subs.push(gap(entry.lap_ms, board[0].lap_ms) + ' behind P1');
+      var ahead = board[entry.rank - 2];
+      if (ahead && entry.rank > 2) {
+        subs.push(gap(entry.lap_ms, ahead.lap_ms) + ' behind P' + ahead.rank);
+      }
+    }
+
+    var best = entry;
+    var chipsHtml = '<span class="chip chip--car">' + esc(best.car) + '</span>' +
+      chipList(best).map(function (c) {
+        return '<span class="chip">' + esc(c) + '</span>';
+      }).join('');
+
+    var stats = [];
+    stats.push(statCell('Track', esc(best.track_config || best.track || '–')));
+    if (best.session_type) stats.push(statCell('Session', esc(best.session_type)));
+    stats.push(statCell('Driven at', fmtClock(best.recorded_at)));
+    if (best.air_temp != null) stats.push(statCell('Air', best.air_temp.toFixed(1) + ' °C'));
+    if (best.road_temp != null) stats.push(statCell('Road', best.road_temp.toFixed(1) + ' °C'));
+    if (best.grip != null) stats.push(statCell('Grip', (best.grip * 100).toFixed(1) + '%'));
+    if (best.fuel_rate != null) stats.push(statCell('Fuel use', '×' + best.fuel_rate));
+    if (best.tyre_rate != null) stats.push(statCell('Tyre wear', '×' + best.tyre_rate));
+    if (best.damage_rate != null) stats.push(statCell('Damage', '×' + best.damage_rate));
+
+    var valid = laps.filter(function (l) { return l.valid; });
+    var summary = laps.length + ' lap' + (laps.length === 1 ? '' : 's') +
+      ' · ' + valid.length + ' valid';
+    if (valid.length > 1) {
+      var chrono = valid.slice().reverse(); // endpoint is newest-first
+      var improved = chrono[0].lap_ms - entry.lap_ms;
+      if (improved > 0) summary += ' · improved ' + (improved / 1000).toFixed(3) + 's';
+    }
+
+    var history = laps.slice(0, 10).map(function (l) {
+      var tag = '';
+      if (l.lap_ms === entry.lap_ms && l.valid) {
+        tag = '<span class="chip chip--best">Best</span>';
+      } else if (!l.valid) {
+        tag = '<span class="chip chip--cut">' + (l.cuts > 0 ? 'Cut' : 'Invalid') + '</span>';
+      }
+      return '<li><span class="detail__lap-time' + (l.valid ? '' : ' is-dim') + '">' +
+        esc(l.lap_time) + '</span>' + tag +
+        '<span class="detail__lap-when">' + fmtClock(l.recorded_at) + '</span></li>';
+    }).join('');
+    var more = laps.length > 10 ? '<p class="detail__more">+ ' +
+      (laps.length - 10) + ' earlier lap(s)</p>' : '';
+
+    return '<p class="kicker kicker--sky detail__kicker"><span>Lap detail</span></p>' +
+      '<div class="detail__head">' +
+      '<span class="detail__rank">P' + entry.rank + '</span>' +
+      '<div class="detail__who"><h3>' + esc(name) + '</h3>' +
+      '<span class="detail__sub">' + subs.slice(1).join(' · ') + '</span></div>' +
+      '<span class="detail__time">' + esc(entry.lap_time) + '</span></div>' +
+      '<div class="detail__chips">' + chipsHtml + '</div>' +
+      '<div class="detail__stats">' + stats.join('') + '</div>' +
+      '<div class="detail__attempts"><h4>Attempts</h4>' +
+      '<span class="detail__summary">' + summary + '</span></div>' +
+      '<ul class="detail__laps">' + history + '</ul>' + more;
+  }
+
+  function openDetail(name) {
+    fetch('/api/driver-laps?event=' + encodeURIComponent(cfg.event) +
+          '&name=' + encodeURIComponent(name))
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (!data || !data.ok) return;
+        var html = buildDetail(name, data.laps || []);
+        if (!html) return;
+        document.getElementById('detail-body').innerHTML = html;
+        document.getElementById('detail').hidden = false;
+        if (detailTimer) clearTimeout(detailTimer);
+        if (cfg.operator) { // kiosk: never leave the board hidden for long
+          detailTimer = setTimeout(closeDetail, 45000);
+        }
+      });
+  }
+
+  document.getElementById('board-rows').addEventListener('click', function (e) {
+    var row = e.target.closest('li[data-driver]');
+    if (row) openDetail(row.getAttribute('data-driver'));
+  });
+  document.getElementById('detail-close').addEventListener('click', closeDetail);
+  document.getElementById('detail').addEventListener('click', function (e) {
+    if (e.target === this) closeDetail();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeDetail();
+  });
 
   function render() {
     if (!state || !state.event) return;

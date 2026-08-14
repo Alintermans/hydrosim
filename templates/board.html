@@ -90,6 +90,14 @@
     <span id="conn-state" class="b-conn"><span class="b-conn__dot"></span><span id="conn-text">Live feed connected</span></span>
   </footer>
 
+  <div id="detail" class="detail" hidden>
+    <div class="detail__card">
+      <div class="detail__strip"></div>
+      <button id="detail-close" class="detail__close" aria-label="Close">×</button>
+      <div id="detail-body" class="detail__body"></div>
+    </div>
+  </div>
+
   {% if operator %}
   <div id="popup" class="popup" hidden>
     <div class="popup__card">

@@ -98,3 +98,15 @@ def test_leaderboard_best_lap_per_driver(client, auth, event):
 def test_no_active_event_409(client, auth):
     resp = client.post("/api/laps", json=lap_payload(), headers=auth)
     assert resp.status_code == 409
+
+
+def test_driver_laps_detail(client, auth, event):
+    for name, ms in [("Anton", 141_000), ("Anton", 139_500), ("anton", 143_000)]:
+        client.post("/api/current-driver", json={"name": name}, headers=auth)
+        client.post("/api/laps", json=lap_payload(lap_ms=ms), headers=auth)
+    resp = client.get("/api/driver-laps?event=spa-test&name=Anton").get_json()
+    assert resp["ok"] and len(resp["laps"]) == 3  # case-insensitive match
+    assert client.get("/api/driver-laps?event=spa-test&name=").status_code == 404
+    assert client.get("/api/driver-laps?event=nope&name=Anton").status_code == 404
+    empty = client.get("/api/driver-laps?event=spa-test&name=Niemand").get_json()
+    assert empty["laps"] == []
