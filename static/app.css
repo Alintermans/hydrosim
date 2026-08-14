@@ -203,6 +203,22 @@ a { color: var(--text-link); }
   animation: lapIn 240ms var(--ease-out) both; min-width: 0;
   grid-template-columns: clamp(34px, 3vw, 58px) minmax(0, 1fr) auto auto; }
 .b-rows--two-col .b-row--podium { grid-column: 1 / -1; }
+/* an odd row count would leave a hole bottom-right; let the last row (or the
+   "+ N more" tile) span the full width instead */
+.b-rows--two-col li:last-child:nth-child(even) { grid-column: 1 / -1; }
+
+.b-row--more { display: flex; align-items: center; justify-content: center;
+  padding: 0; background: transparent;
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  font-family: var(--font-heading); font-weight: var(--weight-semibold);
+  font-size: clamp(11px, 0.83vw, 16px); letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--ink-300); }
+.b-row--more:hover { background: rgba(255, 255, 255, 0.05);
+  color: var(--ht-sky); }
+.board--light .b-row--more { border-color: var(--border-strong);
+  color: var(--text-muted); }
+.board--light .b-row--more:hover { background: var(--blue-50);
+  color: var(--ht-blue); }
 .b-row--podium { grid-row: span 2;
   grid-template-columns: clamp(48px, 5.8vw, 112px) minmax(0, 1fr) auto auto;
   background: rgba(255, 255, 255, 0.06); border-color: rgba(255, 255, 255, 0.14); }

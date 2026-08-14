@@ -54,6 +54,21 @@
     return cls;
   }
 
+  function boardCapacity(total) {
+    // How many rows fit comfortably? Rows must never squeeze into slivers:
+    // derive a count from the available height (min ~48px per row unit; a
+    // podium row takes two units) and hand the overflow to the "+ N more"
+    // tile. Small screens scroll instead and keep 20.
+    var perRow = cfg.kind === 'inhouse' ? 1 : 2;
+    if (window.innerWidth <= 900) return 17;
+    var el = document.getElementById('board-rows');
+    var height = el.clientHeight || 600;
+    var gapPx = 10, minUnit = 48;
+    var units = Math.max(8, Math.floor((height + gapPx) / (minUnit + gapPx)));
+    var podiumUnits = Math.min(3, total) * 2;
+    return Math.max(perRow, (units - podiumUnits) * perRow);
+  }
+
   function renderBoard() {
     var rows = document.getElementById('board-rows');
     var empty = document.getElementById('board-empty');
@@ -61,7 +76,21 @@
     empty.hidden = board.length > 0;
     var bestMs = board.length ? board[0].lap_ms : 0;
     var inhouse = cfg.kind === 'inhouse';
-    setHTML(rows, board.slice(0, 20).map(function (lap) {
+
+    var stdTotal = Math.max(0, board.length - 3);
+    var cap = boardCapacity(board.length);
+    var shown = stdTotal;
+    var hidden = 0;
+    if (stdTotal > cap) {
+      shown = Math.max(0, cap - 1); // one cell goes to the "+ N more" tile
+      hidden = stdTotal - shown;
+    }
+    var moreTile = hidden > 0
+      ? '<li class="b-row b-row--more" data-more>+ ' + hidden +
+        ' more driver' + (hidden === 1 ? '' : 's') + ' · full ranking</li>'
+      : '';
+
+    setHTML(rows, board.slice(0, 3 + shown).map(function (lap) {
       var who = inhouse
         ? '<span class="b-row__who"><span class="b-row__name">' +
           esc(lap.driver_name) + '</span><span class="b-row__chips">' +
@@ -76,7 +105,7 @@
         '<span class="b-row__gap">' + gap(lap.lap_ms, bestMs) + '</span>' +
         '<span class="b-row__time">' + esc(lap.lap_time) + '</span>' +
         '</li>';
-    }).join(''));
+    }).join('') + moreTile);
   }
 
   function renderRecent() {
@@ -405,8 +434,12 @@
   }
 
   document.getElementById('board-rows').addEventListener('click', function (e) {
+    if (e.target.closest('li[data-more]')) { openRanking(); return; }
     var row = e.target.closest('li[data-driver]');
     if (row) openDetail(row.getAttribute('data-driver'));
+  });
+  window.addEventListener('resize', function () {
+    if (state) render();
   });
   document.getElementById('ranking-list').addEventListener('click', function (e) {
     var row = e.target.closest('li[data-driver]');
