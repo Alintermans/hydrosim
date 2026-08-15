@@ -236,6 +236,23 @@
     } catch (e) { return ''; }
   }
 
+  function fmtWhen(iso) {
+    // "today 15:12" / "yesterday 09:46" / "12 aug 09:46" / "12 aug 2025 09:46".
+    // In-house timing spans weeks, so a bare clock time says nothing.
+    try {
+      var d = new Date(iso);
+      var now = new Date();
+      var day = function (x) { return new Date(x.getFullYear(), x.getMonth(), x.getDate()); };
+      var diffDays = Math.round((day(now) - day(d)) / 86400000);
+      var clock = d.toLocaleTimeString('nl-BE', { hour: '2-digit', minute: '2-digit' });
+      if (diffDays === 0) return 'today ' + clock;
+      if (diffDays === 1) return 'yesterday ' + clock;
+      var opts = { day: 'numeric', month: 'short' };
+      if (d.getFullYear() !== now.getFullYear()) opts.year = 'numeric';
+      return d.toLocaleDateString('nl-BE', opts) + ' ' + clock;
+    } catch (e) { return ''; }
+  }
+
   function statCell(label, value) {
     return '<div class="detail__stat"><span class="detail__stat-label">' +
       label + '</span><span class="detail__stat-value">' + value + '</span></div>';
@@ -332,7 +349,7 @@
     var stats = [];
     stats.push(statCell('Track', esc(best.track_config || best.track || '–')));
     if (best.session_type) stats.push(statCell('Session', esc(best.session_type)));
-    stats.push(statCell('Driven at', fmtClock(best.recorded_at)));
+    stats.push(statCell('Driven', fmtWhen(best.recorded_at)));
     if (best.air_temp != null) stats.push(statCell('Air', best.air_temp.toFixed(1) + ' °C'));
     if (best.road_temp != null) stats.push(statCell('Road', best.road_temp.toFixed(1) + ' °C'));
     if (best.grip != null) stats.push(statCell('Grip', (best.grip * 100).toFixed(1) + '%'));
@@ -365,7 +382,7 @@
       }
       return '<li><span class="detail__lap-time' + (l.valid ? '' : ' is-dim') + '">' +
         esc(l.lap_time) + '</span>' + tag +
-        '<span class="detail__lap-when">' + fmtClock(l.recorded_at) + '</span></li>';
+        '<span class="detail__lap-when">' + fmtWhen(l.recorded_at) + '</span></li>';
     }).join('');
     var more = laps.length > 10 ? '<p class="detail__more">+ ' +
       (laps.length - 10) + ' earlier lap(s)</p>' : '';

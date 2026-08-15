@@ -197,7 +197,10 @@ def event_delete(event_id):
 def admin_laps(event_id):
     event = db.session.get(Event, event_id) or abort(404)
     laps = event.laps.order_by(Lap.id.desc()).limit(500).all()
-    return render_template("admin/laps.html", event=event, laps=laps)
+    zone = local_zone(current_app.config["TIMEZONE"])
+    when = {lap.id: lap.recorded_at.replace(tzinfo=tz.utc).astimezone(zone)
+            for lap in laps}
+    return render_template("admin/laps.html", event=event, laps=laps, when=when)
 
 
 @timing_bp.post("/admin/laps/<int:lap_id>/update")

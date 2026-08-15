@@ -666,6 +666,7 @@ a { color: var(--text-link); }
 .a-time { font-family: var(--font-mono); font-weight: var(--weight-bold);
   font-size: 18px; color: var(--ink-900); font-variant-numeric: tabular-nums; }
 .a-time--dim { color: var(--text-muted); }
+.a-when { white-space: nowrap; font-size: 13px; }
 .is-discarded { background: var(--ink-50); }
 .is-discarded .a-time { text-decoration: line-through; }
 .a-rename { display: flex; align-items: center; gap: 8px; }
