@@ -258,8 +258,13 @@
       label + '</span><span class="detail__stat-value">' + value + '</span></div>';
   }
 
-  // --- circuit map: where the lap gains or loses time vs P1 -----------------
-  var COL_MID = [62, 88, 112], COL_SKY = [85, 190, 236], COL_HEAT = [219, 88, 39];
+  // --- circuit map: where a lap gains or loses time vs the reference --------
+  // Neutral is a readable slate (not a murky navy that vanished between the
+  // sky/orange runs); the ramp only leaves neutral past ±40 ms per segment so
+  // "same pace" reads as one calm colour instead of noise.
+  var COL_EVEN = [140, 158, 172], COL_SKY = [85, 190, 236], COL_HEAT = [219, 88, 39];
+  var SEG_DEADBAND_MS = 40, SEG_FULL_MS = 160;
+  var mapCtx = null; // {you: [...laps with trace], ref, refLabel, refIsSelf}
 
   function lerpColor(a, b, f) {
     return 'rgb(' + a.map(function (v, i) {
@@ -268,12 +273,19 @@
   }
 
   function segColor(diffMs) {
-    var f = Math.max(-1, Math.min(1, diffMs / 120)); // ±120 ms per segment
-    return f < 0 ? lerpColor(COL_MID, COL_SKY, -f) : lerpColor(COL_MID, COL_HEAT, f);
+    var mag = Math.abs(diffMs);
+    if (mag <= SEG_DEADBAND_MS) return lerpColor(COL_EVEN, COL_EVEN, 0);
+    var f = Math.min(1, (mag - SEG_DEADBAND_MS) / (SEG_FULL_MS - SEG_DEADBAND_MS));
+    f = 0.35 + 0.65 * f; // jump out of neutral visibly, then ramp
+    return diffMs < 0 ? lerpColor(COL_EVEN, COL_SKY, f) : lerpColor(COL_EVEN, COL_HEAT, f);
+  }
+
+  function tracedLaps(laps) {
+    return (laps || []).filter(function (l) { return l.trace && l.valid; });
   }
 
   function bestTraceLap(laps, wantMs) {
-    var have = (laps || []).filter(function (l) { return l.trace && l.valid; });
+    var have = tracedLaps(laps);
     if (!have.length) return null;
     for (var i = 0; i < have.length; i++) {
       if (have[i].lap_ms === wantMs) return have[i];
@@ -282,8 +294,21 @@
     return have[0];
   }
 
-  function buildMap(you, leader, isLeader) {
-    var geo = (leader && leader.trace) || (you && you.trace);
+  function segTotals(you, ref) {
+    // net time gained (<0) / lost (>0) vs the reference, for the caption
+    var k = you.trace.t.length, gained = 0, lost = 0;
+    for (var i = 0; i < k; i++) {
+      var j = (i + 1) % k;
+      var dtY = (j ? you.trace.t[j] : you.lap_ms) - you.trace.t[i];
+      var dtR = (j ? ref.trace.t[j] : ref.lap_ms) - ref.trace.t[i];
+      var d = dtY - dtR;
+      if (d < 0) gained -= d; else lost += d;
+    }
+    return { gained: gained, lost: lost };
+  }
+
+  function mapSvg(you, ref) {
+    var geo = (ref && ref.trace) || (you && you.trace);
     if (!geo) return '';
     var k = geo.x.length;
     var minX = Math.min.apply(null, geo.x), maxX = Math.max.apply(null, geo.x);
@@ -294,15 +319,15 @@
     var ox = (W - (maxX - minX) * s) / 2, oz = (H - (maxZ - minZ) * s) / 2;
     function px(i) { return ((geo.x[i] - minX) * s + ox).toFixed(1); }
     function pz(i) { return ((geo.z[i] - minZ) * s + oz).toFixed(1); }
-    var compare = !isLeader && you && you.trace && leader && leader.trace;
+    var compare = you && you.trace && ref && ref.trace && you !== ref;
     var segs = '';
     for (var i = 0; i < k; i++) {
       var j = (i + 1) % k;
       var col = '#55BEEC';
       if (compare) {
         var dtY = (j ? you.trace.t[j] : you.lap_ms) - you.trace.t[i];
-        var dtL = (j ? leader.trace.t[j] : leader.lap_ms) - leader.trace.t[i];
-        col = segColor(dtY - dtL);
+        var dtR = (j ? ref.trace.t[j] : ref.lap_ms) - ref.trace.t[i];
+        col = segColor(dtY - dtR);
       }
       segs += '<line x1="' + px(i) + '" y1="' + pz(i) + '" x2="' + px(j) +
         '" y2="' + pz(j) + '" stroke="' + col +
@@ -310,16 +335,71 @@
     }
     var start = '<circle cx="' + px(0) + '" cy="' + pz(0) +
       '" r="7" fill="#021E37" stroke="#FFFFFF" stroke-width="3"/>';
+    return '<svg class="detail__map" viewBox="0 0 ' + W + ' ' + H +
+      '" role="img">' + segs + start + '</svg>';
+  }
+
+  function renderMapInto(container) {
+    if (!mapCtx || !container) return;
+    var ctx = mapCtx;
+    var sel = container.querySelector('#map-lap');
+    var idx = sel ? parseInt(sel.value, 10) || 0 : 0;
+    var you = ctx.you[idx] || ctx.you[0] || null;
+    var ref = ctx.ref;
+    var compare = you && ref && you !== ref;
+
+    var caption;
+    if (compare) {
+      var tot = segTotals(you, ref);
+      var net = you.lap_ms - ref.lap_ms;
+      caption = '<span class="detail__vs">' +
+        '<b>' + esc(you.lap_time) + '</b> <em>' + fmtWhen(you.recorded_at) + '</em>' +
+        ' <span class="detail__vs-mid">vs</span> ' +
+        '<b>' + esc(ref.lap_time) + '</b> ' + esc(ctx.refLabel) +
+        ' <span class="detail__vs-net ' + (net > 0 ? 'is-lost' : 'is-gained') + '">' +
+        (net > 0 ? '+' : '−') + (Math.abs(net) / 1000).toFixed(3) + '</span>' +
+        '</span>' +
+        '<span class="detail__vs-split">gained ' + (tot.gained / 1000).toFixed(3) +
+        's · lost ' + (tot.lost / 1000).toFixed(3) + 's</span>';
+    } else if (ctx.refIsSelf) {
+      caption = '<span class="detail__vs">This is the benchmark lap — every other ' +
+        'driver is compared to it.</span>';
+    } else {
+      caption = '<span class="detail__vs">No comparison available yet — the ' +
+        'reference lap has no track data.</span>';
+    }
     var legend = compare
-      ? '<span class="detail__legend"><i style="background:#55BEEC"></i>faster than P1' +
-        '<i style="background:#DB5827"></i>slower than P1</span>'
-      : '<span class="detail__legend">' +
-        (isLeader ? 'The benchmark lap — everyone is compared to this one.'
-                  : 'No comparison available yet.') + '</span>';
-    return '<div class="detail__mapwrap"><div class="detail__attempts">' +
-      '<h4>Circuit · vs P1</h4>' + legend + '</div>' +
-      '<svg class="detail__map" viewBox="0 0 ' + W + ' ' + H +
-      '" role="img">' + segs + start + '</svg></div>';
+      ? '<span class="detail__legend"><i style="background:#55BEEC"></i>faster' +
+        '<i style="background:rgb(140,158,172)"></i>same pace' +
+        '<i style="background:#DB5827"></i>slower</span>'
+      : '';
+    var body = container.querySelector('.detail__mapbody');
+    if (body) {
+      body.innerHTML = '<div class="detail__vsrow">' + caption + legend + '</div>' +
+        mapSvg(you, ref);
+    }
+  }
+
+  function buildMapBlock(youLaps, ref, refLabel, refIsSelf, bestMs) {
+    var you = tracedLaps(youLaps);
+    if (!you.length && !(ref && ref.trace)) return '';
+    mapCtx = { you: you, ref: ref, refLabel: refLabel, refIsSelf: refIsSelf };
+    // Pick which of your laps to compare: default = your best; the dropdown
+    // lists every lap with track data (newest first, best tagged).
+    var bestIdx = 0;
+    you.forEach(function (l, i) { if (l.lap_ms === bestMs) bestIdx = i; });
+    var picker = '';
+    if (you.length > 1) {
+      picker = '<label class="detail__pick"><span>Lap</span><select id="map-lap">' +
+        you.map(function (l, i) {
+          return '<option value="' + i + '"' + (i === bestIdx ? ' selected' : '') + '>' +
+            esc(l.lap_time) + (l.lap_ms === bestMs ? ' · best' : '') +
+            ' · ' + fmtWhen(l.recorded_at) + '</option>';
+        }).join('') + '</select></label>';
+    }
+    return '<div class="detail__mapwrap" id="map-block"><div class="detail__attempts">' +
+      '<h4>Circuit · vs ' + esc(refLabel) + '</h4>' + picker + '</div>' +
+      '<div class="detail__mapbody"></div></div>';
   }
 
   function buildDetail(name, laps, leaderLaps) {
@@ -367,11 +447,12 @@
     }
 
     var isLeader = entry.rank === 1;
-    var youLap = bestTraceLap(laps, entry.lap_ms);
     var leaderEntry = board[0];
-    var leaderLap = isLeader ? youLap
+    var refLap = isLeader ? bestTraceLap(laps, entry.lap_ms)
       : bestTraceLap(leaderLaps, leaderEntry ? leaderEntry.lap_ms : 0);
-    var mapHtml = buildMap(youLap, leaderLap, isLeader);
+    var refLabel = isLeader ? 'your best'
+      : 'P1 ' + (leaderEntry ? leaderEntry.driver_name : '');
+    var mapHtml = buildMapBlock(laps, refLap, refLabel, isLeader, entry.lap_ms);
 
     var history = laps.slice(0, 10).map(function (l) {
       var tag = '';
@@ -417,7 +498,14 @@
       var html = buildDetail(name, results[0], results[1] || []);
       if (!html) return;
       closeRanking();
-      document.getElementById('detail-body').innerHTML = html;
+      var body = document.getElementById('detail-body');
+      body.innerHTML = html;
+      var block = body.querySelector('#map-block');
+      if (block) {
+        renderMapInto(block);
+        var sel = block.querySelector('#map-lap');
+        if (sel) sel.addEventListener('change', function () { renderMapInto(block); });
+      }
       document.getElementById('detail').hidden = false;
       if (detailTimer) clearTimeout(detailTimer);
       if (cfg.operator) { // kiosk: never leave the board hidden for long

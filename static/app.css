@@ -531,11 +531,38 @@ a { color: var(--text-link); }
 /* circuit map inside the detail card */
 .detail__mapwrap { margin-top: clamp(16px, 1.5vw, 28px); }
 .detail__map { display: block; width: 100%; height: auto; margin-top: 10px; }
-.detail__legend { display: flex; align-items: center; gap: 8px;
+.detail__legend { display: flex; align-items: center; gap: 8px; flex: none;
   font-family: var(--font-mono); font-size: clamp(11px, 0.83vw, 15px);
   color: var(--ink-300); }
 .detail__legend i { display: inline-block; width: 22px; height: 6px;
-  border-radius: 3px; }
+  border-radius: 3px; margin-left: 6px; }
+.detail__legend i:first-child { margin-left: 0; }
+/* the "which lap vs which" line above the map */
+.detail__vsrow { display: flex; align-items: center; justify-content: space-between;
+  gap: 16px; flex-wrap: wrap; margin-top: 10px; padding: 10px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12); border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.04); }
+.detail__vs { font-family: var(--font-mono); font-size: clamp(12px, 0.9vw, 17px);
+  color: var(--ink-200); }
+.detail__vs b { font-weight: var(--weight-bold); color: var(--ht-white);
+  font-variant-numeric: tabular-nums; }
+.detail__vs em { font-style: normal; color: var(--ink-400); }
+.detail__vs-mid { color: var(--ht-sky); font-weight: var(--weight-bold);
+  letter-spacing: 0.08em; text-transform: uppercase; margin: 0 4px; }
+.detail__vs-net { font-weight: var(--weight-bold); margin-left: 8px;
+  padding: 1px 8px; border-radius: var(--radius-xs); }
+.detail__vs-net.is-lost { color: #F2A48F; background: rgba(219, 88, 39, 0.18); }
+.detail__vs-net.is-gained { color: var(--ht-sky); background: rgba(85, 190, 236, 0.16); }
+.detail__vs-split { flex-basis: 100%; font-family: var(--font-mono);
+  font-size: clamp(11px, 0.78vw, 14px); color: var(--ink-400); }
+.detail__pick { display: flex; align-items: center; gap: 8px;
+  font-family: var(--font-heading); font-weight: var(--weight-semibold);
+  font-size: clamp(10px, 0.7vw, 13px); letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--ink-400); }
+.detail__pick select { font-family: var(--font-mono); font-size: clamp(12px, 0.85vw, 15px);
+  color: var(--ht-white); background: rgba(2, 30, 55, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.24); border-radius: var(--radius-sm);
+  padding: 5px 8px; max-width: 60vw; }
 
 /* full-ranking modal */
 .detail__card--narrow { width: min(640px, 94vw); }
