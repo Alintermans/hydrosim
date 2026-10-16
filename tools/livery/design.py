@@ -178,7 +178,7 @@ for row_y, names in ((0.445, ROW1), (0.33, ROW2)):
     for zc, n in zip(COLS, names):
         boost = {'p_air-products': 1.25, 'p_atlas-copco': 1.25, 'p_ocas': 1.25, 'p_vincotte': 1.2}.get(n, 1.0)
         partner2(n, zc, row_y, keep_colour=n in COLOUR, boost=boost,
-                 max_h=0.115 if n == 'p_vincotte' else None)
+                 max_h=0.115 if n in ('p_vincotte', 'p_nrf') else None)
 top_decal(load('ht_mark', W), 0.0, 1.78, 0.42, ymin=0.3)        # nose
 top_decal(load('kul'), 0.0, 1.35, 0.46)                         # hood
 top_decal(load('num56w'), 0.0, -0.25, 0.40, ymin=1.0)           # roof, for the TV camera
