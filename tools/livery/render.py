@@ -57,7 +57,9 @@ def view(yaw, pitch, W=900, H=520):
         img[y0:y1, x0:x1][m] = col[m] * sh[m][:, None]
     return Image.fromarray((np.clip(img, 0, 1) * 255).astype(np.uint8)).transpose(Image.FLIP_LEFT_RIGHT)  # AC is left-handed
 
-views = [view(90, 0), view(-90, 0), view(35, -18), view(215, -18), view(180, -12), view(0, -12)]
+import os
+vs = os.environ.get('VIEWS')
+views = [view(*map(float, v.split(':'))) for v in vs.split(',')] if vs else [view(90, 0), view(-90, 0), view(35, -18), view(215, -18), view(180, -12), view(0, -12)]
 sheet = Image.new('RGB', (1800, 1560))
 for i, im in enumerate(views): sheet.paste(im, ((i % 2) * 900, (i // 2) * 520))
 sheet.save(out, quality=88)

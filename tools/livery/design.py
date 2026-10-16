@@ -35,7 +35,7 @@ ax = np.abs(x)
 # kicks up over the rear haunch -- the V0's light-blue lower fenders.
 def sweep_y(zz):
     base = 0.25 + 0.10 * smooth(0.7, 2.0, zz)            # a touch higher at the nose
-    rear = 0.20 * smooth(-0.45, -1.25, zz)               # kicks up over the haunch
+    rear = 0.20 * smooth(-1.15, -1.45, zz)               # kicks up at the rear arch
     return base + rear
 sy = sweep_y(z)
 f_sweep = y - sy
@@ -47,6 +47,16 @@ paint((np.abs(f_sweep) < 0.012) & (ax > 0.25), ORANGE)
 sill = (y < 0.17) & side
 paint(sill | (y < 0.13), NAVY)
 paint((np.abs(y - 0.17) < 0.008) & side, WHITE)
+
+# --- 2b. brand band: navy along the flank between the wheels (the V0's dark
+# sill), carrying a big white HydroTeam wordmark ---------------------------
+# The whole flat flank below the ledge (y < 0.53) between the wheels goes
+# navy: a dark lower body under the blue top, and every logo sits white on
+# dark -- maximum contrast, like a prototype's sponsor flank.
+flank = (np.abs(nx) > 0.45) & (ax > 0.6) & (z < 0.80) & (z > -1.17) & (y > 0.09)
+paint(flank & (y < 0.528), NAVY)
+paint(flank & (y >= 0.528) & (y < 0.540), ORANGE)
+paint(flank & (y >= 0.540) & (y < 0.552), SKY)
 
 # --- 3. rear deck sky, outlined in orange -------------------------------------
 wing = (y > 0.93) & (z < -1.72)
@@ -71,9 +81,9 @@ paint(fpatch, ORANGE)
 # --- 5. speed stripes ahead of the rear wheel (the V0 signature) -------------
 lean = 0.55
 t = (z - lean * y)                                       # slanted coordinate
-zone = (np.abs(nx) > 0.5) & (ax > 0.5) & (t > -1.62) & (t < -0.92) & (y > sy + 0.02) & (y < 0.86)
-band = np.floor((t + 1.62) / 0.1).astype(int)
-phase = ((t + 1.62) / 0.1) % 1
+zone = (np.abs(nx) > 0.3) & (ax > 0.45) & (y > 0.6) & (t > -1.75) & (t < -1.05) & (y > sy + 0.02) & (y < 0.86)
+band = np.floor((t + 1.75) / 0.1).astype(int)
+phase = ((t + 1.75) / 0.1) % 1
 cyc = [ORANGE, BLUE, ORANGE, SKY, ORANGE, BLUE, ORANGE]
 for i, c in enumerate(cyc):
     paint(zone & (band == i) & (phase > 0.1), c)
@@ -113,14 +123,14 @@ def top_decal(img, xc, zc, width, from_front=False, mirror_x=False, ymin=0.3, ym
         stamp(img, sel, u, v)
 
 W = WHITE
-side_decal(load('ht_color'), -0.19, 0.21, 0.90)                  # HydroTeam on the sky band
-side_decal(load('num56w'), 0.02, 0.60, 0.50)                     # 56 on the door
+side_decal(load('ht_white'), -0.18, 0.163, 0.92)                 # HydroTeam, big, on the navy band
+side_decal(load('num56w'), -0.46, 0.705, 0.235, min_ax=0.45)  # upper rear quarter, above the ledge                     # 56 on the door
 flag = np.zeros((40, 60, 4), np.float32); flag[..., 3] = 1
 flag[:, :20, :3] = 0; flag[:, 20:40, :3] = rgb('#FDDA24'); flag[:, 40:, :3] = rgb('#EF3340')
-side_decal(flag, 0.40, 0.69, 0.11)
+side_decal(flag, -0.66, 0.70, 0.075, min_ax=0.45)
 # Partners: every logo gets the SAME optical size -- equal area, capped so
 # very wide or tall marks stay in proportion -- on a tidy grid.
-AREA, MAX_W, MAX_H = 0.0150, 0.34, 0.10
+AREA, MAX_W, MAX_H = 0.0195, 0.205, 0.092
 
 def partner(name, zc, yc, navy=False, min_ax=0.55, max_w=None):
     img = load(name, NAVY if navy else None)
@@ -131,26 +141,41 @@ def partner(name, zc, yc, navy=False, min_ax=0.55, max_w=None):
     w = min(w, max_w or MAX_W, MAX_H * aspect)
     side_decal(img, zc, yc, w, min_ax=min_ax)
 
-# MAIN PARTNERS on the flanks (what visitors at the stand see)
-# front fender, behind the wheel: a stack of three
-for i, n in enumerate(['p_agoria', 'p_belden', 'p_fike']):
-    partner(n, 0.61, 0.585 - i * 0.098, min_ax=0.5)
-# door, under the number: a row of four
-for zc, n in [(0.29, 'p_air-products'), (0.03, 'p_atlas-copco'), (-0.24, 'p_ford'), (-0.51, 'p_ocas')]:
-    partner(n, zc, 0.36)
-partner('p_vincotte', -0.36, 0.665)                       # behind the number
-partner('p_bindsol', 0.44, 0.215, navy=True, min_ax=0.5)  # sky band, front
-partner('p_elneo', -0.82, 0.215, navy=True)               # sky band, rear
-# rear haunch (sky): two slots kept for NRF and Burke Porter
-for zc, yc, n in [(-0.90, 0.355, 'p_nrf'), (-0.90, 0.27, 'p_burke-porter')]:
-    import os
-    if os.path.exists('assets/' + n + '.png'):
-        partner(n, zc, yc, navy=n != 'p_nrf')
-# SUPPORTING PARTNERS on the rear-wing end plates
-for yc, n in [(1.01, 'p_domec'), (0.925, 'p_phoenix-contact')]:
-    partner(n, -1.97, yc, min_ax=0.6)
-partner('p_airtech', -1.92, 0.50, min_ax=0.6, max_w=0.19)          # rear corners, behind the wheel
-partner('p_van-mossel', -1.92, 0.415, navy=True, min_ax=0.6, max_w=0.19)
+# THE 12 MAIN PARTNERS, all on the flanks (what visitors at the stand see,
+# and what the AC start-menu camera shows), white on blue for contrast.
+import os
+from PIL import ImageFilter
+
+def bold(img):
+    # thicken thin strokes a little so light fonts stay legible
+    a = Image.fromarray((img[..., 3] * 255).astype(np.uint8)).filter(ImageFilter.MaxFilter(3))
+    img = img.copy(); img[..., 3] = np.asarray(a).astype(np.float32) / 255
+    return img
+
+def partner2(name, zc, yc, keep_colour=False, max_w=None, max_h=None, boost=1.0):
+    if not os.path.exists('assets/' + name + '.png'):
+        return False  # slot kept free until the logo file arrives
+    img = load(name)
+    if not keep_colour:
+        img[..., :3] = 1.0
+        img[..., 3] = np.clip(img[..., 3] * 1.8, 0, 1)
+        img = bold(img)
+    aspect = img.shape[1] / img.shape[0]
+    w = min((AREA * aspect) ** 0.5 * boost, max_w or MAX_W, (max_h or MAX_H) * aspect)  # never wider than its cell
+    side_decal(img, zc, yc, w, min_ax=0.5)
+    return True
+
+# The flat, vertical flank (y 0.26..0.52, z +0.5..-1.25) is the billboard:
+# 12 partners on a 2 x 6 grid, white on blue (Ford, Vincotte, NRF in colour).
+COLS = [0.33, 0.08, -0.17, -0.42, -0.67, -0.92]
+ROW1 = ['p_agoria', 'p_ford', 'p_fike', 'p_atlas-copco', 'p_air-products', 'p_belden']
+ROW2 = ['p_vincotte', 'p_bindsol', 'p_ocas', 'p_elneo', 'p_nrf', 'p_burke-porter']
+COLOUR = {'p_vincotte', 'p_nrf'}
+for row_y, names in ((0.445, ROW1), (0.33, ROW2)):
+    for zc, n in zip(COLS, names):
+        boost = {'p_air-products': 1.25, 'p_atlas-copco': 1.25, 'p_ocas': 1.25, 'p_vincotte': 1.2}.get(n, 1.0)
+        partner2(n, zc, row_y, keep_colour=n in COLOUR, boost=boost,
+                 max_h=0.115 if n == 'p_vincotte' else None)
 top_decal(load('ht_mark', W), 0.0, 1.78, 0.42, ymin=0.3)        # nose
 top_decal(load('kul'), 0.0, 1.35, 0.46)                         # hood
 top_decal(load('num56w'), 0.0, -0.25, 0.40, ymin=1.0)           # roof, for the TV camera
