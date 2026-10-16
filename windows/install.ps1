@@ -24,7 +24,7 @@ if (-not (Test-Path ".venv")) {
     python -m venv .venv
 }
 & .venv\Scripts\python -m pip install --upgrade pip --quiet
-& .venv\Scripts\pip install -r requirements.txt --quiet
+& .venv\Scripts\python -m pip install -r requirements.txt --quiet
 Write-Host "Dependencies installed."
 
 # --- helpers -----------------------------------------------------------------

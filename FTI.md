@@ -27,7 +27,11 @@ het toetsenbord en ziet meteen op welke plaats hij eindigt.
 
 ## Eenmalig installeren (thuis, mét internet)
 
-1. Open een opdrachtprompt in de hydrosim-map en haal de FTI-versie binnen:
+0. Zet de map **hydrosim** op het **bureaublad** van de sim-pc (vanaf de USB,
+   of `git clone`). Had de pc al een hydrosim-map? Kopieer daaruit `.env` en de
+   map `data` naar de nieuwe map: zo blijven tokens en tijden behouden.
+   Dubbelklik dan **INSTALLEREN** en ga verder bij stap 3.
+1. (Zonder USB) Open een opdrachtprompt in de hydrosim-map en haal de FTI-versie binnen:
    ```
    git fetch origin
    git checkout fti

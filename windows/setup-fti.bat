@@ -25,6 +25,14 @@ if errorlevel 1 (
     )
 )
 
+rem A Python environment copied or moved from another folder breaks: rebuild it.
+if exist .venv\Scripts\python.exe (
+    .venv\Scripts\python.exe -c "import flask, waitress" >nul 2>&1
+    if errorlevel 1 (
+        echo Python environment does not work here - rebuilding it...
+        rmdir /s /q .venv
+    )
+)
 if not exist .venv\Scripts\python.exe (
     powershell -NoProfile -ExecutionPolicy Bypass -File windows\install.ps1
     if errorlevel 1 goto failed

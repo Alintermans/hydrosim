@@ -21,7 +21,7 @@ function Write-Utf8NoBom($Path, $Content) {
 }
 
 # --- dependencies (pull a fresh requirements set while we have internet) -----
-& .venv\Scripts\pip install -r requirements.txt --quiet
+& .venv\Scripts\python -m pip install -r requirements.txt --quiet
 
 # --- Assetto Corsa -----------------------------------------------------------
 $acDir = $null
