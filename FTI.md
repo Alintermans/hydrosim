@@ -53,8 +53,12 @@ het toetsenbord en ziet meteen op welke plaats hij eindigt.
    naam. Stoppen: `windows\stop-fti.bat`. Testrit wegdoen via `/admin` → Laps → Discard.
 6. Windows automatisch laten aanmelden (`netplwiz` → vinkje uit bij
    "Gebruikers moeten een gebruikersnaam en wachtwoord invoeren").
-7. **Als administrator**: `windows\lockdown.ps1` (schakelt Taakbeheer,
-   Vergrendelen, Afmelden, Afsluiten en meldingen uit; scherm/slaapstand nooit).
+7. **Als administrator**: `windows\lockdown.ps1` en daarna **herstarten**.
+   - schakelt de **Ctrl- en Alt-toetsen uit** (op Windows-niveau, voor de hele
+     pc): Ctrl+Alt+Del kan niet meer ingedrukt worden
+   - schakelt Taakbeheer, Vergrendelen, Afmelden, Afsluiten en meldingen uit
+   - scherm en slaapstand nooit uit
+   Alles terugzetten: `windows\unlock.ps1` als administrator + herstarten.
 8. Herstart. De stand start vanzelf: server, collector en autopilot draaien
    geminimaliseerd, het expo-scherm opent op scherm 2.
 
