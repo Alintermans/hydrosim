@@ -280,6 +280,9 @@ def main() -> None:
         except OSError as exc:
             log(f"could not install the livery ({exc}) — AC uses its own skin")
         sim.stop()  # a leftover AC from before a restart
+        from autopilot.sim import unlock_foreground
+        log("foreground lock " + ("off" if unlock_foreground() else
+            "still on (windows\\lockdown.ps1 turns it off) - first click activates AC"))
         inputs = WindowsInputs(cfg, log=log)
         screen = main = None
         if cfg["manage_browser"]:

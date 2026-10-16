@@ -320,6 +320,13 @@ class RealSim:
         if hwnd:  # the click must land on AC, not on whatever is in front
             bring_to_front(hwnd)
             time.sleep(0.3)
+            if not is_foreground(hwnd):
+                # Windows refused to hand AC the focus (nobody touched the PC
+                # since it booted). A click ON the window always activates it,
+                # so first click the middle of AC's screen, then the menu.
+                self.log("AC is not the active window - activating it with a click")
+                activate_by_click(hwnd)
+                time.sleep(0.4)
         else:
             self.log("AC window not found for the start-menu click")
         click(*spot, hwnd=hwnd)
@@ -384,6 +391,32 @@ def bring_to_front(hwnd) -> None:
         u.ShowWindow(hwnd, 9)           # SW_RESTORE
     u.SetForegroundWindow(hwnd)
     u.SwitchToThisWindow(hwnd, True)
+
+
+def is_foreground(hwnd) -> bool:
+    import ctypes
+    return ctypes.windll.user32.GetForegroundWindow() == hwnd
+
+
+def activate_by_click(hwnd) -> None:
+    """Click the centre of AC's window: the system itself then makes it the
+    foreground window, foreground lock or not."""
+    import ctypes
+    from ctypes import wintypes
+    r = wintypes.RECT()
+    ctypes.windll.user32.GetWindowRect(hwnd, ctypes.byref(r))
+    click((r.left + r.right) // 2, (r.top + r.bottom) // 2)
+
+
+def unlock_foreground() -> bool:
+    """Turn off Windows' foreground lock for this session, so the autopilot
+    may bring AC to the front without anyone having touched the PC."""
+    try:
+        import ctypes
+        # SPI_SETFOREGROUNDLOCKTIMEOUT = 0x2001, value passed in pvParam
+        return bool(ctypes.windll.user32.SystemParametersInfoW(0x2001, 0, ctypes.c_void_p(0), 0x2))
+    except Exception:
+        return False
 
 
 def click(x: int, y: int, hwnd=None) -> None:

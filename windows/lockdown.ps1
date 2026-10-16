@@ -40,6 +40,10 @@ Set-ItemProperty -Path $kb -Name "Scancode Map" -Value $map -Type Binary
 # at the sign-in screen (e.g. if auto-logon ever fails).
 Set-ItemProperty $hklm DisableCAD 1 -Type DWord
 
+# No "foreground lock": nobody touches this PC, so the autopilot must be able
+# to bring Assetto Corsa to the front without a human click first.
+Set-ItemProperty "HKCU:\Control Panel\Desktop" ForegroundLockTimeout 0 -Type DWord
+
 # Never sleep, never blank the screens.
 powercfg /change monitor-timeout-ac 0
 powercfg /change standby-timeout-ac 0

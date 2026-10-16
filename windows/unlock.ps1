@@ -10,4 +10,5 @@ foreach ($p in @(@($sys,"DisableTaskMgr"), @($sys,"DisableLockWorkstation"),
                  @("HKLM:\SYSTEM\CurrentControlSet\Control\Keyboard Layout","Scancode Map"))) {
     Remove-ItemProperty -Path $p[0] -Name $p[1] -ErrorAction SilentlyContinue
 }
+Set-ItemProperty "HKCU:\Control Panel\Desktop" ForegroundLockTimeout 200000 -Type DWord
 Write-Host "Lockdown removed. REBOOT to get Ctrl and Alt back." -ForegroundColor Green
