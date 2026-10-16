@@ -20,7 +20,8 @@ db = SQLAlchemy()
 
 KIND_EVENT = "event"      # public expo leaderboard: big names, no telemetry noise
 KIND_INHOUSE = "inhouse"  # team timing: settings columns + filters
-KINDS = (KIND_EVENT, KIND_INHOUSE)
+KIND_EXPO = "expo"        # unmanned fair stand (FTI): autopilot, cuts ignored
+KINDS = (KIND_EVENT, KIND_INHOUSE, KIND_EXPO)
 
 
 def utcnow() -> datetime:
@@ -67,6 +68,12 @@ class Event(db.Model):
     @staticmethod
     def active_event():
         return Event.query.filter_by(active=True).order_by(Event.id.desc()).first()
+
+    @property
+    def ignores_cuts(self) -> bool:
+        """Expo stands drop track limits: visitors drive one lap, every
+        finished lap counts (min_lap_s still stops shortcuts/glitches)."""
+        return self.kind == KIND_EXPO
 
     def accepts(self, track: str, car: str) -> tuple[bool, str]:
         """Ingest filter. Returns (accepted, reason-when-refused)."""

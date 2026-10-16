@@ -10,11 +10,11 @@
 
 :root {
   /* Display, big uppercase slide titles, hero. Montserrat 800/900. */
-  --font-display: 'Montserrat', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display: 'Montserrat', 'Segoe UI', system-ui, -apple-system, 'Segoe UI', sans-serif;
   /* Headings / UI labels. */
-  --font-heading: 'Montserrat', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-heading: 'Montserrat', 'Segoe UI', system-ui, -apple-system, 'Segoe UI', sans-serif;
   /* Body / running text. */
-  --font-body: 'Montserrat', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-body: 'Montserrat', 'Segoe UI', system-ui, -apple-system, 'Segoe UI', sans-serif;
   /* Mono, real data, specs, telemetry, code. */
-  --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', monospace;
+  --font-mono: 'JetBrains Mono', Consolas, ui-monospace, 'SFMono-Regular', monospace;
 }

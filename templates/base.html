@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}HydroSim Timing{% endblock %}</title>
   <meta name="csrf-token" content="{{ csrf_token() }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='fonts/local.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='ds/tokens/fonts.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='ds/tokens/colors.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='ds/tokens/typography.css') }}">

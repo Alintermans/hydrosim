@@ -22,6 +22,15 @@ hasn't seen it" on BOTH sides — the local relay pushes its unsynced rows and
 pulls the cloud's via `/api/sync/pull` each cycle. Don't break that clock:
 every write to driver_name/discarded must stamp `assigned_at`.
 
+Third shape — **expo stand** (`FTI.md`): an unmanned, offline sim PC. Event
+kind `expo` ignores cuts. `autopilot/` (Windows) starts AC via race.ini on a
+wheel button, ends the session after the first VALID lap the server stored,
+owns the keyboard through a low-level hook (only name characters get
+through; an admin code releases it) and reports its phase to `expo.py`
+(`/api/expo/phase` → in-memory, `/expo` screen). `autopilot/pilot.py` is a
+pure state machine with injected sim/inputs/server/clock — test it with
+fakes (`tests/test_autopilot.py`), never by sleeping.
+
 ## Commands
 
 ```bash
@@ -31,6 +40,7 @@ flask --app app init-db
 FLASK_DEBUG=1 flask --app app run        # http://localhost:5000
 pytest                                    # full suite
 python -m collector --demo                # fake laps (any OS; needs collector.ini)
+python -m autopilot --demo --config …     # expo stand without AC (console = wheel/keyboard)
 ```
 
 Windows: `windows\install.ps1` once, then `windows\start.bat`

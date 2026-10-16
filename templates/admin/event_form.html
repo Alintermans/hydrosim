@@ -39,6 +39,7 @@
           <select id="kind" name="kind">
             <option value="event" {{ "selected" if event.kind == "event" }}>event — public leaderboard (names only)</option>
             <option value="inhouse" {{ "selected" if event.kind == "inhouse" }}>inhouse — team timing (car, tyres &amp; aids shown, car filter)</option>
+            <option value="expo" {{ "selected" if event.kind == "expo" }}>expo — unmanned stand (autopilot, one lap per visitor, track limits ignored)</option>
           </select>
         </div>
 

@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}{{ event.name }} · HydroSim Expo{% endblock %}
+{# The unmanned stand's second screen (FTI). Same dark navy face as the kiosk;
+   the right half is a "stage" the autopilot drives through its phases
+   (idle → starting → driving → finished → naming → result). Everything the
+   visitor reads is Dutch. #}
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='expo.css') }}">
+{% endblock %}
+{% block bodyclass %}expo-page{% endblock %}
+
+{% block body %}
+<div class="expo">
+  <header class="x-header">
+    <img class="x-logo" src="{{ url_for('static', filename='assets/logo-wordmark-white.svg') }}" alt="HydroTeam">
+    <span class="x-header__divider"></span>
+    <div class="x-title">
+      <p class="kicker kicker--sky">
+        <img src="{{ url_for('static', filename='assets/tick-sky.svg') }}" alt="">
+        <span>Sim challenge · Spa-Francorchamps</span>
+      </p>
+      <h1 class="x-title__name">{{ event.name }}</h1>
+    </div>
+    <div id="x-stats" class="x-stats"></div>
+  </header>
+
+  <div class="x-rule">
+    <img src="{{ url_for('static', filename='assets/bars.svg') }}" alt="">
+    <span class="x-rule__line"></span>
+  </div>
+
+  <main class="x-main">
+    <section class="x-board">
+      <div class="x-board__head">
+        <h2>Klassement</h2>
+        <span class="x-board__sub">Beste ronde per bestuurder</span>
+      </div>
+      <ol id="x-rows" class="x-rows"></ol>
+      <p id="x-empty" class="x-empty" hidden>Nog geen tijden — wees de eerste!</p>
+    </section>
+
+    <div class="x-side">
+      <section id="x-stage" class="x-stage" data-phase="idle">
+        <div class="x-stage__strip"></div>
+        <div id="x-stage-body" class="x-stage__body"></div>
+      </section>
+
+      <section class="x-recent">
+        <h2>Laatste ritten</h2>
+        <ul id="x-recent" class="x-recent__list"></ul>
+      </section>
+    </div>
+  </main>
+
+  <footer class="x-footer">
+    <span>HydroTeam KU Leuven · Racen op waterstof</span>
+    <span id="x-conn" class="x-conn"><span class="x-conn__dot"></span><span id="x-conn-text">Live</span></span>
+  </footer>
+</div>
+
+<script>
+  window.HS = {
+    event: {{ event.slug | tojson }},
+    token: {{ api_token | tojson }}
+  };
+</script>
+<script src="{{ url_for('static', filename='expo.js') }}"></script>
+{% endblock %}

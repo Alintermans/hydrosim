@@ -16,7 +16,7 @@ from datetime import timezone as tz
 from flask import (Blueprint, Response, abort, current_app, flash, redirect,
                    render_template, request, session, url_for)
 
-from models import KINDS, KIND_EVENT, Event, Lap, db, local_zone
+from models import KINDS, KIND_EVENT, KIND_EXPO, Event, Lap, db, local_zone
 from security import admin_required, kiosk_allowed
 
 timing_bp = Blueprint("timing", __name__)
@@ -46,6 +46,8 @@ def kiosk():
     event = Event.active_event()
     if event is None:
         return render_template("no_event.html")
+    if event.kind == KIND_EXPO:  # unmanned stand: the autopilot's screen
+        return redirect(url_for("expo.screen"))
     # The kiosk JS talks to the operator API with the bearer token. This page
     # only renders on the sim PC itself (127.0.0.1 + KIOSK_OPEN) or behind the
     # admin login, so handing it the token is deliberate.

@@ -51,10 +51,13 @@ def create_app(config_object=Config) -> Flask:
                 cur.close()
 
     from api import api_bp
+    from expo import expo_bp
     from timing import timing_bp
     app.register_blueprint(api_bp)
+    app.register_blueprint(expo_bp)
     app.register_blueprint(timing_bp)
     csrf.exempt(api_bp)  # bearer-token authed; nothing in it trusts a cookie
+    csrf.exempt(expo_bp)  # same: its one POST is the autopilot, bearer-authed
 
     from security import init_security
     init_security(app)

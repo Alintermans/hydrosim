@@ -133,7 +133,7 @@ def ingest_lap():
 
     from models import utcnow
     cuts = int(data.get("cuts") or 0)
-    valid = cuts <= event.max_cuts and lap_ms >= event.min_lap_s * 1000
+    valid = (event.ignores_cuts or cuts <= event.max_cuts) and lap_ms >= event.min_lap_s * 1000
     lap = Lap(client_id=client_id, event_id=event.id, lap_ms=lap_ms, cuts=cuts,
               valid=valid, driver_name=event.current_driver or None,
               assigned_at=utcnow() if event.current_driver else None, **fields)
