@@ -118,14 +118,23 @@ side_decal(load('num56w'), 0.02, 0.60, 0.50)                     # 56 on the doo
 flag = np.zeros((40, 60, 4), np.float32); flag[..., 3] = 1
 flag[:, :20, :3] = 0; flag[:, 20:40, :3] = rgb('#FDDA24'); flag[:, 40:, :3] = rgb('#EF3340')
 side_decal(flag, 0.40, 0.69, 0.11)
-side_decal(load('p_agoria'), 0.57, 0.53, 0.32, min_ax=0.5)       # behind the front wheel
-side_decal(load('p_belden'), 0.57, 0.45, 0.24, min_ax=0.5)
-side_decal(load('p_domec'), 0.57, 0.385, 0.24, min_ax=0.5)
-side_decal(load('p_vincotte'), 0.57, 0.65, 0.07, min_ax=0.5)
+# Partners, grouped and big: the flanks are what visitors at the stand see.
+# Front fender, behind the wheel (blue): the main partners, white.
+side_decal(load('p_agoria'), 0.60, 0.585, 0.46, min_ax=0.5)
+side_decal(load('p_belden'), 0.60, 0.475, 0.36, min_ax=0.5)
+side_decal(load('p_domec'), 0.60, 0.385, 0.36, min_ax=0.5)
+side_decal(load('p_vincotte'), -0.36, 0.665, 0.085)
+# Door, under the number: a row of three, white.
+side_decal(load('p_fike'), 0.27, 0.355, 0.20)
+side_decal(load('p_phoenix-contact'), 0.00, 0.355, 0.27)
+side_decal(load('p_airtech'), -0.29, 0.36, 0.25)
+# Rear haunch (sky): navy.
 navy_ = lambda n: load(n, NAVY)
-side_decal(navy_('p_van-mossel'), -0.95, 0.40, 0.26)              # rear haunch, on sky
-side_decal(navy_('p_phoenix-contact'), -0.95, 0.33, 0.24)
-side_decal(navy_('p_air-products'), -0.62, 0.30, 0.20)
+side_decal(navy_('p_van-mossel'), -0.86, 0.345, 0.34)
+side_decal(navy_('p_atlas-copco'), -0.86, 0.275, 0.26)
+# Sky band ahead of / behind the HydroTeam wordmark: navy.
+side_decal(navy_('p_thrustmaster'), 0.66, 0.215, 0.30, min_ax=0.5)
+side_decal(navy_('p_elneo'), -0.68, 0.215, 0.16)
 top_decal(load('ht_mark', W), 0.0, 1.78, 0.42, ymin=0.3)        # nose
 top_decal(load('kul'), 0.0, 1.35, 0.46)                         # hood
 top_decal(load('num56w'), 0.0, -0.25, 0.40, ymin=1.0)           # roof, for the TV camera
