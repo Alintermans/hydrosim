@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}HydroTeam · Sim challenge{% endblock %}
+{# Main monitor between runs (the game monitor). Big brand, one instruction.
+   The text follows the autopilot's phase: start the car here, but read your
+   result on the screen next to it. #}
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='expo.css') }}">
+{% endblock %}
+{% block bodyclass %}expo-page{% endblock %}
+
+{% block body %}
+<div class="expo xm">
+  <div class="xm__center">
+    <img class="xm__logo" src="{{ url_for('static', filename='assets/logo-wordmark-white.svg') }}" alt="HydroTeam">
+    <div class="xm__bars"><img src="{{ url_for('static', filename='assets/bars.svg') }}" alt=""></div>
+    <p class="kicker kicker--sky xm__kicker">
+      <img src="{{ url_for('static', filename='assets/tick-sky.svg') }}" alt="">
+      <span>Sim challenge · Spa-Francorchamps</span>
+    </p>
+    <h1 id="xm-msg" class="xm__msg">Druk op <span class="x-key">START</span> op het stuur</h1>
+    <p id="xm-sub" class="xm__sub">Eén ronde in de Radical. Je tijd en je plaats verschijnen op het scherm hiernaast.</p>
+  </div>
+  <footer class="xm__foot">HydroTeam KU Leuven · Racen op waterstof</footer>
+</div>
+<script>
+  window.HS = { token: {{ api_token | tojson }} };
+  (function () {
+    var msg = document.getElementById('xm-msg'), sub = document.getElementById('xm-sub');
+    var TEXT = {
+      idle: ['Druk op <span class="x-key">START</span> op het stuur',
+             'Eén ronde in de Radical. Je tijd en je plaats verschijnen op het scherm hiernaast.'],
+      starting: ['Maak je <em>klaar</em>…', 'De wagen wordt klaargezet.'],
+      naming: ['Typ je <em>naam</em>', 'Kijk naar het scherm hiernaast en druk op ENTER.'],
+      result: ['Goed <em>gereden</em>!', 'Je plaats staat op het scherm hiernaast.'],
+      finished: ['<em>Finish!</em>', 'Je tijd staat op het scherm hiernaast.'],
+      message: ['Even <em>geduld</em>', ''],
+      offline: ['Even <em>geduld</em>', 'De simulator start op.']
+    };
+    var last = '';
+    function show(phase) {
+      var t = TEXT[phase] || TEXT.idle;
+      if (last === phase) return;
+      last = phase;
+      msg.innerHTML = t[0]; sub.textContent = t[1];
+      msg.classList.toggle('x-pulse', phase === 'idle');
+    }
+    function load() {
+      fetch('/api/expo/state', { headers: { 'Authorization': 'Bearer ' + HS.token }, cache: 'no-store' })
+        .then(function (r) { return r.json(); })
+        .then(function (s) { show(s.age_s == null || s.age_s > 20 ? 'offline' : s.phase); })
+        .catch(function () { show('offline'); });
+    }
+    load();
+    setInterval(load, 2000);
+    if (window.EventSource) new EventSource('/api/stream').onmessage = load;
+  })();
+</script>
+{% endblock %}

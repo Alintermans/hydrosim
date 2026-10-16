@@ -12,4 +12,4 @@ collector/queue.jsonl
 .pytest_cache/
 
 autopilot/autopilot.ini
-autopilot/.browser-profile/
+autopilot/.browser-profile*/

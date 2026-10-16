@@ -70,3 +70,8 @@ def test_expo_screen_and_kiosk_redirect(admin_client, expo_event):
     assert admin_client.get("/expo").status_code == 200
     resp = admin_client.get("/kiosk")
     assert resp.status_code == 302 and resp.headers["Location"].endswith("/expo")
+
+
+def test_main_screen_renders(admin_client, expo_event):
+    resp = admin_client.get("/expo/main")
+    assert resp.status_code == 200 and b"Druk op" in resp.data

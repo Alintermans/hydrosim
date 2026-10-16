@@ -138,3 +138,15 @@ def screen():
     from flask import current_app
     return render_template("expo.html", event=event,
                            api_token=current_app.config["API_TOKEN"])
+
+
+@expo_bp.get("/expo/main")
+def main_screen():
+    """The MAIN monitor between runs: HydroTeam branding instead of a bare
+    Windows desktop. The autopilot closes it while Assetto Corsa runs and
+    reopens it afterwards."""
+    if not kiosk_allowed():
+        return redirect(url_for("timing.login", next="/expo/main"))
+    from flask import current_app
+    return render_template("expo_main.html", event=Event.active_event(),
+                           api_token=current_app.config["API_TOKEN"])

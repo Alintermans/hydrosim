@@ -45,6 +45,7 @@ class Pilot:
         self.lap = None            # dict of the run's lap (from /api/state)
         self.message = ""
         self.run_started = None    # wall clock (UTC) when the run began
+        self.crossed_at = None     # wall clock when the car crossed the line
         self.idle_since = None
         self.progress = None
         self.elapsed_ms = None
@@ -136,6 +137,7 @@ class Pilot:
     # ---------------------------------------------------------------- run --
     def _start_run(self) -> None:
         self.run_started = self.wall()
+        self.crossed_at = None
         self.idle_since = None
         self._last_lap_check = -1e9
         self._goto("starting")
@@ -154,7 +156,14 @@ class Pilot:
         state = self.server.state()
         if not state:
             return None
-        since = self.run_started - timedelta(seconds=2)
+        # AC already counts on its start menu and during the run-up, so the
+        # collector reports that bit as a "lap" when the car crosses the line.
+        # Once we know when the line was crossed, only laps finishing well
+        # after it are the visitor's.
+        if self.crossed_at is not None:
+            since = self.crossed_at + timedelta(seconds=20)
+        else:
+            since = self.run_started - timedelta(seconds=2)
         laps = (state.get("pending") or []) + (state.get("recent") or [])
         for lap in sorted(laps, key=lambda l: l.get("recorded_at", "")):
             at = _parse_utc(lap.get("recorded_at", ""))
@@ -182,6 +191,8 @@ class Pilot:
 
         elif self.phase == "driving":
             tel = self.sim.telemetry() or {}
+            if tel.get("started") and self.crossed_at is None:
+                self.crossed_at = self.wall()
             self.progress = tel.get("progress")
             self.elapsed_ms = tel.get("elapsed_ms")
             lap = self._find_lap()

@@ -203,3 +203,24 @@ def test_race_ini_sessions():
     race = race_ini(dict(CFG, session="race"), "red")
     assert "TYPE=3" in race and "LAPS=1" in race and "SPAWN_SET=START" in race
     assert "AUTO_SHIFTER=1" in assists_ini(CFG)
+
+
+def test_runup_lap_after_crossing_is_ignored():
+    pilot, clock, server, sim, inputs = make()
+    inputs.queue.append(("button",))
+    step(pilot, clock)
+    sim.live = True
+    step(pilot, clock)
+    crossed = T0 + timedelta(minutes=1)
+    pilot.wall = lambda: crossed
+    sim.telemetry = lambda: {"live": True, "speed": 150, "started": True,
+                             "progress": 0.01, "elapsed_ms": 500}
+    step(pilot, clock)
+    assert pilot.crossed_at == crossed
+    # start menu + run-up, reported as a "lap" right at the line: not theirs
+    server.laps.append(lap(ms=101_000, at=crossed + timedelta(seconds=1), cid="menu"))
+    step(pilot, clock, 1.1)
+    assert pilot.phase == "driving"
+    server.laps.append(lap(at=crossed + timedelta(minutes=2, seconds=20), cid="real"))
+    step(pilot, clock, 1.1)
+    assert pilot.phase == "finished" and pilot.lap["client_id"] == "real"

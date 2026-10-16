@@ -109,6 +109,9 @@ ACTIVE=0
 
 [RESTART]
 ACTIVE=0
+
+[AUTOSPAWN]
+ACTIVE=1
 """
 
 
@@ -201,6 +204,9 @@ class RealSim:
         self._write("race.ini", race_ini(self.cfg, self._skin()))
         self._write("assists.ini", assists_ini(self.cfg))
         self._packet, self._packet_seen = None, 0.0
+        self._lap = None          # lap-start detection, see telemetry()
+        self._clicks, self._live_at = 0, None
+        _allow_foreground()
         self.proc = subprocess.Popen([str(self.ac_dir / self.EXE)], cwd=str(self.ac_dir))
         self._running_cache = (time.monotonic(), True)
         self.log(f"Assetto Corsa started ({self.cfg['car']} @ {self.cfg['track']}, "
@@ -240,11 +246,61 @@ class RealSim:
         if not (ticking and g.status == AC_LIVE):
             return {"live": False}
         p = self._sm.physics.read()
-        pos = float(g.normalizedCarPosition)
-        if g.completedLaps == 0 and g.iCurrentTime <= 0:
-            pos = 0.0  # hotlap run-up before the line: the lap hasn't begun
-        return {"live": True, "speed": float(p.speedKmh), "progress": pos,
-                "elapsed_ms": max(0, int(g.iCurrentTime))}
+        speed = float(p.speedKmh)
+        self._auto_click(now, speed)
+
+        # AC's lap clock already runs on the start menu and during the hotlap
+        # run-up to the line. The visitor's lap starts when they CROSS the
+        # line: the lap counter goes up, or the current-lap clock resets.
+        laps, cur = int(g.completedLaps), int(g.iCurrentTime)
+        if self._lap is None:
+            self._lap = {"base": laps, "prev": cur, "started": False}
+        st = self._lap
+        if not st["started"] and (laps > st["base"] or cur + 1000 < st["prev"]):
+            st["started"] = True
+        st["prev"] = cur
+        if not st["started"]:
+            return {"live": True, "speed": speed, "progress": None,
+                    "elapsed_ms": None, "started": False}
+        return {"live": True, "speed": speed, "started": True,
+                "progress": float(g.normalizedCarPosition),
+                "elapsed_ms": max(0, cur)}
+
+    def _auto_click(self, now: float, speed: float) -> None:
+        """Fallback when AC still opens on its start menu (rode zijbalk) even
+        with AUTOSPAWN: click the configured 'drive' spot, a few times, only
+        while the car hasn't moved yet. Off when [ac] start_click is empty."""
+        spot = self.cfg.get("start_click")
+        if not spot or self._clicks >= 3 or speed > 2:
+            return
+        if self._live_at is None:
+            self._live_at = now
+        if now - self._live_at < self.cfg.get("start_click_delay", 3) + 4 * self._clicks:
+            return
+        self._clicks += 1
+        click(*spot)
+        self.log(f"clicked the AC start menu at {spot} (try {self._clicks})")
+
+
+def _allow_foreground() -> None:
+    """Let the AC window we start take the foreground (Windows otherwise
+    may keep it behind the browser)."""
+    try:
+        import ctypes
+        ctypes.windll.user32.AllowSetForegroundWindow(-1)  # ASFW_ANY
+    except Exception:
+        pass
+
+
+def click(x: int, y: int) -> None:
+    """A real left mouse click at screen pixel (x, y) — works without a
+    mouse attached."""
+    import ctypes
+    u = ctypes.windll.user32
+    u.SetCursorPos(int(x), int(y))
+    u.mouse_event(0x0002, 0, 0, 0, 0)  # left down
+    time.sleep(0.05)
+    u.mouse_event(0x0004, 0, 0, 0, 0)  # left up
 
 
 class DemoSim:
@@ -277,6 +333,10 @@ class DemoSim:
         t = time.monotonic() - self.started - 3
         if t < 0:
             return {"live": False}
+        if t < 4:  # rolling to the line: the lap hasn't started
+            return {"live": True, "speed": 120.0, "progress": None,
+                    "elapsed_ms": None, "started": False}
+        t -= 4
         frac = min(1.0, t / self.lap_s)
         if frac >= 1.0 and not self.posted:
             self.posted = True
@@ -292,7 +352,7 @@ class DemoSim:
                 "trace": demo_trace(lap_ms)})
             self.log("DEMO: lap posted")
         return {"live": True, "speed": 180.0, "progress": frac % 1.0,
-                "elapsed_ms": int(frac * 150_000)}
+                "elapsed_ms": int(frac * 150_000), "started": True}
 
 
 def is_windows() -> bool:

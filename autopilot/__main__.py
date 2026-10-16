@@ -43,21 +43,21 @@ def find_browser(setting: str) -> str | None:
 
 
 class Screen:
-    """Keeps the expo page open full-screen on the second monitor. A private
-    browser profile means no "restore pages?" bubbles, no sign-in prompts,
-    and an instance we can recognise and restart if it ever closes."""
+    """One full-screen kiosk browser window on one monitor. A private profile
+    per window: no "restore pages?" bubbles, no sign-in prompts, and two
+    instances that don't merge into one. Restarted if it ever closes."""
 
-    def __init__(self, cfg: dict):
-        self.cfg = cfg
+    def __init__(self, cfg: dict, url: str, position, name: str):
+        self.cfg, self.url, self.position, self.name = cfg, url, position, name
         self.exe = find_browser(cfg["browser"])
-        self.profile = HERE / ".browser-profile"
+        self.profile = HERE / f".browser-profile-{name}"
         self.proc = None
         self.launches: list[float] = []
 
     def args(self) -> list[str]:
-        x, y = self.cfg["position"]
+        x, y = self.position
         return [self.exe, f"--user-data-dir={self.profile}",
-                "--kiosk", self.cfg["screen_url"], "--edge-kiosk-type=fullscreen",
+                "--kiosk", self.url, "--edge-kiosk-type=fullscreen",
                 f"--window-position={x},{y}", "--no-first-run",
                 "--no-default-browser-check", "--disable-pinch",
                 "--overscroll-history-navigation=0", "--disable-session-crashed-bubble",
@@ -71,9 +71,36 @@ class Screen:
         if len(self.launches) >= 4:  # it keeps exiting: don't spam windows
             return
         if self.launches:
-            log("expo screen closed — reopening")
+            log(f"{self.name} screen closed — reopening")
         self.launches.append(now)
         self.proc = subprocess.Popen(self.args())
+
+    def close(self) -> None:
+        """Deliberate close (not a crash): the whole browser process tree."""
+        if self.proc and self.proc.poll() is None:
+            subprocess.run(["taskkill", "/F", "/T", "/PID", str(self.proc.pid)],
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        self.proc = None
+        self.launches = []
+
+
+# While Assetto Corsa is on the main monitor, the branding page must be gone
+# (else AC may open BEHIND it); between runs it covers the bare desktop.
+AC_PHASES = ("starting", "driving", "finished")
+
+
+class MainScreenSim:
+    """Wraps the sim: closes the main-monitor page right before AC starts."""
+
+    def __init__(self, sim, main: Screen):
+        self.sim, self.main = sim, main
+
+    def start(self) -> None:
+        self.main.close()
+        self.sim.start()
+
+    def __getattr__(self, name):
+        return getattr(self.sim, name)
 
 
 def keep_awake() -> None:
@@ -142,7 +169,8 @@ def main() -> None:
     if args.demo:
         from autopilot.inputs import ConsoleInputs
         from autopilot.sim import DemoSim
-        sim, inputs, screen = DemoSim(cfg, server, log=log), ConsoleInputs(cfg, log=log), None
+        sim, inputs = DemoSim(cfg, server, log=log), ConsoleInputs(cfg, log=log)
+        screen = main = None
     else:
         if not windows:
             sys.exit("The real stand runs on Windows — on this OS use --demo.")
@@ -154,7 +182,12 @@ def main() -> None:
             sys.exit("Assetto Corsa setup problems:\n  - " + "\n  - ".join(problems))
         sim.stop()  # a leftover AC from before a restart
         inputs = WindowsInputs(cfg, log=log)
-        screen = Screen(cfg) if cfg["manage_browser"] else None
+        screen = main = None
+        if cfg["manage_browser"]:
+            screen = Screen(cfg, cfg["screen_url"], cfg["position"], "board")
+            if cfg["main_screen"]:
+                main = Screen(cfg, cfg["main_url"], cfg["main_position"], "main")
+                sim = MainScreenSim(sim, main)
         keep_awake()
 
     pilot = Pilot(cfg, server, sim, inputs, log=log)
@@ -165,8 +198,11 @@ def main() -> None:
     try:
         while True:
             pilot.tick()
-            if screen and time.monotonic() - last_screen > 5:
-                screen.keep_open()
+            if time.monotonic() - last_screen > 1:
+                if screen:
+                    screen.keep_open()
+                if main and pilot.phase not in AC_PHASES:
+                    main.keep_open()
                 last_screen = time.monotonic()
             time.sleep(0.05)
     except KeyboardInterrupt:

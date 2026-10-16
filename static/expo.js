@@ -216,6 +216,12 @@
           'Rechterpedaal = gas, middelste pedaal = rem. Schakelen gaat vanzelf.</p>' +
           '<div class="x-bar x-bar--load"><span class="x-bar__fill"></span></div>';
       case 'driving':
+        if (st.elapsed_ms == null) {
+          return '<p class="kicker kicker--heat"><span>Op de baan</span></p>' +
+            '<h2 class="x-big">Rij naar de <em>startlijn</em></h2>' +
+            '<p class="x-sub">De tijd begint te lopen zodra je over de streep rijdt. Gas geven!</p>' +
+            '<div class="x-facts">' + leaderFact() + '</div>';
+        }
         return '<p class="kicker kicker--heat"><span>Op de baan · 1 ronde</span></p>' +
           '<div id="x-clock" class="x-clock">' + fmtClock(st.elapsed_ms || 0) + '</div>' +
           '<div class="x-bar"><span class="x-bar__fill" style="width:' +

@@ -7,6 +7,14 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 
 
+def _xy(raw: str):
+    """'960,540' -> (960, 540); anything else -> None."""
+    parts = raw.replace(" ", "").split(",")
+    if len(parts) == 2 and all(p.lstrip("-").isdigit() for p in parts):
+        return int(parts[0]), int(parts[1])
+    return None
+
+
 def load(path: Path) -> dict:
     cp = configparser.ConfigParser(inline_comment_prefixes=(";",))
     # utf-8-sig: Windows PowerShell writes a BOM; plain utf-8 chokes on it.
@@ -26,6 +34,7 @@ def load(path: Path) -> dict:
         return [int(p) for p in raw.replace(" ", "").split(",") if p.isdigit()]
 
     pos = s("screen", "position", "1920,0").replace(" ", "").split(",")
+    main_pos = _xy(s("screen", "main_position", "0,0")) or (0, 0)
     return {
         "url": s("server", "url", "http://127.0.0.1:8088").rstrip("/"),
         "token": s("server", "token"),
@@ -38,6 +47,8 @@ def load(path: Path) -> dict:
         "track": s("ac", "track", "spa"),
         "track_config": s("ac", "track_config"),
         "session": s("ac", "session", "hotlap").lower(),
+        "start_click": _xy(s("ac", "start_click")),
+        "start_click_delay": i("ac", "start_click_delay", 3),
 
         "assists": {
             "auto_shifter": i("assists", "auto_shifter", 1),
@@ -75,6 +86,9 @@ def load(path: Path) -> dict:
         "manage_browser": i("screen", "manage_browser", 1) == 1,
         "browser": s("screen", "browser", "auto"),
         "screen_url": s("screen", "url", "http://127.0.0.1:8088/expo"),
+        "main_screen": i("screen", "main_screen", 1) == 1,
+        "main_url": s("screen", "main_url", "http://127.0.0.1:8088/expo/main"),
+        "main_position": main_pos,
         "position": (int(pos[0]), int(pos[1])) if len(pos) == 2
                     and all(p.lstrip("-").isdigit() for p in pos) else (1920, 0),
     }
