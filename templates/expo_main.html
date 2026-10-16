@@ -11,7 +11,11 @@
 {% block body %}
 <div class="expo xm">
   <div class="xm__center">
-    <img class="xm__logo" src="{{ url_for('static', filename='assets/logo-wordmark-white.svg') }}" alt="HydroTeam">
+    <div class="xm__brand">
+      <img class="xm__logo" src="{{ url_for('static', filename='assets/logo-wordmark-white.svg') }}" alt="HydroTeam">
+      <span class="xm__divider"></span>
+      <img class="xm__kul" src="{{ url_for('static', filename='assets/logo-kuleuven.svg') }}" alt="KU Leuven">
+    </div>
     <div class="xm__bars"><img src="{{ url_for('static', filename='assets/bars.svg') }}" alt=""></div>
     <p class="kicker kicker--sky xm__kicker">
       <img src="{{ url_for('static', filename='assets/tick-sky.svg') }}" alt="">

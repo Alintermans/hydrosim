@@ -19,6 +19,7 @@
 /* header -------------------------------------------------------------- */
 .x-header { display: flex; align-items: center; gap: clamp(14px, 2.1vw, 40px); }
 .x-logo { display: block; width: clamp(120px, 12.1vw, 232px); height: auto; }
+.x-kul { display: block; height: clamp(36px, 3.3vw, 64px); width: auto; }
 .x-header__divider { width: 1px; height: clamp(36px, 3.3vw, 64px);
   background: rgba(255, 255, 255, 0.18); }
 .x-title { flex: 1; min-width: 0; display: flex; flex-direction: column;
@@ -218,7 +219,12 @@ h2 { margin: 0; font-family: var(--font-heading); font-weight: var(--weight-bold
 .xm { justify-content: center; align-items: center; text-align: center; }
 .xm__center { flex: 1; display: flex; flex-direction: column; align-items: center;
   justify-content: center; gap: clamp(16px, 1.7vw, 32px); }
-.xm__logo { width: clamp(280px, 42vw, 820px); height: auto; }
+.xm__brand { display: flex; align-items: center; justify-content: center;
+  gap: clamp(24px, 3.1vw, 60px); }
+.xm__logo { width: clamp(240px, 34vw, 660px); height: auto; }
+.xm__divider { width: 2px; align-self: stretch; min-height: clamp(60px, 6.25vw, 120px);
+  background: rgba(255, 255, 255, 0.25); }
+.xm__kul { height: clamp(64px, 7.3vw, 140px); width: auto; }
 .xm__bars img { width: clamp(90px, 8.3vw, 160px); height: auto; display: block; }
 .xm__kicker { justify-content: center; margin-top: clamp(20px, 3vw, 56px); }
 .xm__msg { margin: 0; font-family: var(--font-display); font-weight: var(--weight-black);
