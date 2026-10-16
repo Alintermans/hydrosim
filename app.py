@@ -74,6 +74,28 @@ def create_app(config_object=Config) -> Flask:
         ensure_schema(app)
         click.echo("Database ready.")
 
+    @app.cli.command("create-expo")
+    @click.option("--name", default="FTI 2026")
+    @click.option("--slug", default="fti-2026")
+    @click.option("--car", default="radical", help="car filter (substring of the AC car folder)")
+    @click.option("--track", default="spa")
+    @click.option("--min-lap", default=100, type=int, help="seconds; shorter laps don't count")
+    def create_expo(name, slug, car, track, min_lap):
+        """Create (or update) the expo event and make it the active one — so
+        setting up the unmanned stand needs no clicking in /admin."""
+        from models import KIND_EXPO, Event
+        ensure_schema(app)
+        event = Event.query.filter_by(slug=slug).first() or Event(slug=slug)
+        event.name, event.kind = name, KIND_EXPO
+        event.car_filter, event.track_filter = car, track
+        event.min_lap_s, event.max_cuts = min_lap, 0
+        Event.query.update({Event.active: False})
+        event.active = True
+        db.session.add(event)
+        db.session.commit()
+        click.echo(f"Active event: {name} ({slug}) — expo, {car} @ {track}, "
+                   f"min lap {min_lap}s.")
+
     import sync
     sync.start(app)
 

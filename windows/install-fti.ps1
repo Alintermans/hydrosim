@@ -76,6 +76,10 @@ if (-not (Test-Path "autopilot\autopilot.ini")) {
     Write-Host "autopilot\autopilot.ini already exists - leaving it untouched."
 }
 
+# --- the expo event (active, Radical @ Spa, track limits ignored) -----------
+& .venv\Scripts\python -m flask --app app create-expo --name "FTI 2026" --slug fti-2026 --car $car --track spa --min-lap 100
+if ($LASTEXITCODE -ne 0) { Write-Warning "Could not create the expo event - create it in /admin (kind 'expo')." }
+
 # --- fonts for offline use ---------------------------------------------------
 $fonts = @{
     "montserrat-latin-wght-normal.woff2"     = "https://cdn.jsdelivr.net/npm/@fontsource-variable/montserrat@5/files/montserrat-latin-wght-normal.woff2"
@@ -109,7 +113,6 @@ Write-Host ""
 Write-Host "Next steps (FTI.md has the full checklist):" -ForegroundColor Cyan
 Write-Host "  1. .venv\Scripts\python -m autopilot --learn   -> press the start button on the wheel,"
 Write-Host "     put its numbers in autopilot\autopilot.ini [wheel] (or leave empty = any button)"
-Write-Host "  2. http://127.0.0.1:$($envMap['PORT'])/admin -> new event, kind 'expo', track filter 'spa', activate"
-Write-Host "  3. Steam: log in once, then Steam > Go Offline"
-Write-Host "  4. As administrator: windows\lockdown.ps1  (Ctrl+Alt+Del / Win+L / sleep)"
-Write-Host "  5. windows\start-fti.bat"
+Write-Host "  2. Steam: log in once, then Steam > Go Offline"
+Write-Host "  3. As administrator: windows\lockdown.ps1  (Ctrl+Alt+Del / Win+L / sleep)"
+Write-Host "  4. windows\start-fti.bat"

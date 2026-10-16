@@ -27,32 +27,42 @@ het toetsenbord en ziet meteen op welke plaats hij eindigt.
 
 ## Eenmalig installeren (thuis, mét internet)
 
-1. `git pull` en `git checkout fti` in de hydrosim-map.
-2. `powershell -ExecutionPolicy Bypass -File windows\install.ps1` (als dat nog niet gebeurd was).
-3. `powershell -ExecutionPolicy Bypass -File windows\install-fti.ps1`
-   - zoekt Assetto Corsa en de Radical-map, schrijft `autopilot\autopilot.ini`
-   - **toont de ADMIN CODE — schrijf die op!**
+1. Open een opdrachtprompt in de hydrosim-map en haal de FTI-versie binnen:
+   ```
+   git fetch origin
+   git checkout fti
+   ```
+2. Dubbelklik **`windows\setup-fti.bat`**. Dat doet alles in één keer:
+   - installeert Python-pakketten (de eerste keer)
+   - zoekt Assetto Corsa en de Radical-map (`content\cars\*radical*`); bij
+     meerdere vraagt het welke
+   - schrijft `autopilot\autopilot.ini` en **toont de ADMIN CODE — schrijf die op!**
+   - maakt het event **FTI 2026** aan en activeert het (expo, Spa, Radical,
+     track limits genegeerd, min. rondetijd 100 s)
    - downloadt de lettertypes voor offline gebruik
    - vraagt of de stand automatisch moet starten bij aanmelden (ja)
-4. Startknop kiezen: `.venv\Scripts\python -m autopilot --learn`, druk op de
-   knop die START moet zijn en zet de getoonde nummers in
+
+   Opnieuw uitvoeren mag altijd: bestaande instellingen blijven behouden.
+3. Startknop kiezen (optioneel): `.venv\Scripts\python -m autopilot --learn`,
+   druk op de knop die START moet zijn en zet de getoonde nummers in
    `autopilot\autopilot.ini` onder `[wheel]` (leeg laten = elke knop start).
-5. Event aanmaken: start `windows\start.bat` één keer, open
-   http://127.0.0.1:8088/admin → *New event* → kind **expo**, track filter
-   `spa`, car filter `radical`, minimum rondetijd bv. `100` s → *Activate*.
-   Sluit daarna alles.
-6. Steam: aanmelden, AC één keer met de hand starten (stuur kalibreren,
+4. Steam: aanmelden, AC één keer met de hand starten (stuur kalibreren,
    besturing instellen, grafische instellingen), dan **Steam → Go Offline**.
    Zet Steam op "start met Windows". `acs.exe` werkt niet zonder Steam.
-7. Windows automatisch laten aanmelden (`netplwiz` → vinkje uit bij
+5. Test: `windows\start-fti.bat`, druk op de stuurknop, rij een ronde, typ een
+   naam. Stoppen: `windows\stop-fti.bat`. Testrit wegdoen via `/admin` → Laps → Discard.
+6. Windows automatisch laten aanmelden (`netplwiz` → vinkje uit bij
    "Gebruikers moeten een gebruikersnaam en wachtwoord invoeren").
-8. **Als administrator**: `windows\lockdown.ps1` (schakelt Taakbeheer,
+7. **Als administrator**: `windows\lockdown.ps1` (schakelt Taakbeheer,
    Vergrendelen, Afmelden, Afsluiten en meldingen uit; scherm/slaapstand nooit).
-9. Herstart. De stand start vanzelf: server, collector en autopilot draaien
+8. Herstart. De stand start vanzelf: server, collector en autopilot draaien
    geminimaliseerd, het expo-scherm opent op scherm 2.
 
 Tip: test eerst alles **zonder** `lockdown.ps1` en met `lock = 0` in
 `autopilot.ini`, en zet daarna pas de vergrendeling aan.
+
+Andere naam of wagen voor het event? `.venv\Scripts\python -m flask --app app
+create-expo --name "..." --slug ... --car <map> --min-lap 100`.
 
 ## Ter plaatse
 

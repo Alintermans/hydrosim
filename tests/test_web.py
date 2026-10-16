@@ -96,3 +96,17 @@ def test_csv_export(admin_client, client, auth, event, app):
 
 def test_healthz(client):
     assert client.get("/healthz").get_json() == {"status": "ok"}
+
+
+def test_create_expo_cli(app):
+    from models import Event
+    runner = app.test_cli_runner()
+    result = runner.invoke(args=["create-expo", "--car", "ks_radical"])
+    assert result.exit_code == 0, result.output
+    result = runner.invoke(args=["create-expo", "--car", "ks_radical", "--min-lap", "110"])
+    with app.app_context():
+        events = Event.query.all()
+        assert len(events) == 1  # rerunning updates, never duplicates
+        ev = events[0]
+        assert (ev.kind, ev.active, ev.car_filter, ev.min_lap_s) == \
+            ("expo", True, "ks_radical", 110)
