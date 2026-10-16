@@ -19,7 +19,8 @@
 /* header -------------------------------------------------------------- */
 .x-header { display: flex; align-items: center; gap: clamp(14px, 2.1vw, 40px); }
 .x-logo { display: block; width: clamp(120px, 12.1vw, 232px); height: auto; }
-.x-kul { display: block; height: clamp(36px, 3.3vw, 64px); width: auto; }
+.x-kul { display: block; height: clamp(22px, 1.9vw, 36px); width: auto; opacity: 0.85;
+  margin-left: calc(-1 * clamp(4px, 0.8vw, 16px)); }
 .x-header__divider { width: 1px; height: clamp(36px, 3.3vw, 64px);
   background: rgba(255, 255, 255, 0.18); }
 .x-title { flex: 1; min-width: 0; display: flex; flex-direction: column;
@@ -219,19 +220,15 @@ h2 { margin: 0; font-family: var(--font-heading); font-weight: var(--weight-bold
 .xm { justify-content: center; align-items: center; text-align: center; }
 .xm__center { flex: 1; display: flex; flex-direction: column; align-items: center;
   justify-content: center; gap: clamp(16px, 1.7vw, 32px); }
-.xm__brand { display: flex; align-items: center; justify-content: center;
-  gap: clamp(24px, 3.1vw, 60px); }
-.xm__logo { width: clamp(240px, 34vw, 660px); height: auto; }
-.xm__divider { width: 2px; align-self: stretch; min-height: clamp(60px, 6.25vw, 120px);
-  background: rgba(255, 255, 255, 0.25); }
-.xm__kul { height: clamp(64px, 7.3vw, 140px); width: auto; }
+.xm__logo { width: clamp(280px, 42vw, 820px); height: auto; }
+.xm__kul { height: clamp(26px, 2.3vw, 44px); width: auto; opacity: 0.85; }
 .xm__bars img { width: clamp(90px, 8.3vw, 160px); height: auto; display: block; }
 .xm__kicker { justify-content: center; margin-top: clamp(20px, 3vw, 56px); }
 .xm__msg { margin: 0; font-family: var(--font-display); font-weight: var(--weight-black);
   font-size: clamp(32px, 4.4vw, 84px); line-height: 1.05; text-transform: uppercase; }
 .xm__msg em { font-style: normal; color: var(--ht-orange); }
 .xm__sub { margin: 0; font-size: clamp(16px, 1.46vw, 28px); color: var(--ink-200); max-width: 40em; }
-.xm__foot { font-size: clamp(11px, 0.73vw, 14px); letter-spacing: 0.12em;
+.xm__foot { display: flex; align-items: center; gap: 16px; font-size: clamp(11px, 0.73vw, 14px); letter-spacing: 0.12em;
   text-transform: uppercase; color: var(--ink-400); }
 
 /* the wheel's cross button (PlayStation ✕), drawn round like on the rim */

@@ -11,11 +11,7 @@
 {% block body %}
 <div class="expo xm">
   <div class="xm__center">
-    <div class="xm__brand">
-      <img class="xm__logo" src="{{ url_for('static', filename='assets/logo-wordmark-white.svg') }}" alt="HydroTeam">
-      <span class="xm__divider"></span>
-      <img class="xm__kul" src="{{ url_for('static', filename='assets/logo-kuleuven.svg') }}" alt="KU Leuven">
-    </div>
+    <img class="xm__logo" src="{{ url_for('static', filename='assets/logo-wordmark-white.svg') }}" alt="HydroTeam">
     <div class="xm__bars"><img src="{{ url_for('static', filename='assets/bars.svg') }}" alt=""></div>
     <p class="kicker kicker--sky xm__kicker">
       <img src="{{ url_for('static', filename='assets/tick-sky.svg') }}" alt="">
@@ -24,7 +20,10 @@
     <h1 id="xm-msg" class="xm__msg">Druk op <span class="x-key x-key--cross">✕</span> op het stuur</h1>
     <p id="xm-sub" class="xm__sub">Eén ronde in onze V0. Je tijd en je plaats verschijnen op het scherm hiernaast.</p>
   </div>
-  <footer class="xm__foot">HydroTeam KU Leuven · Racen op waterstof</footer>
+  <footer class="xm__foot">
+    <img class="xm__kul" src="{{ url_for('static', filename='assets/logo-kuleuven.svg') }}" alt="KU Leuven">
+    <span>HydroTeam KU Leuven · Racen op waterstof</span>
+  </footer>
 </div>
 <script>
   window.HS = { token: {{ api_token | tojson }} };
