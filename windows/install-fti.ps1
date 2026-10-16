@@ -70,7 +70,7 @@ if (-not (Test-Path "autopilot\autopilot.ini")) {
     Write-Host ""
     Write-Host "  ADMIN CODE: $code" -ForegroundColor Yellow
     Write-Host "  Type it on the keyboard at any time to release the keyboard for 10 minutes."
-    Write-Host "  (Also in autopilot\autopilot.ini — write it down, the stand is locked without it.)"
+    Write-Host "  (Also in autopilot\autopilot.ini - write it down, the stand is locked without it.)"
     Write-Host ""
 } else {
     Write-Host "autopilot\autopilot.ini already exists - leaving it untouched."

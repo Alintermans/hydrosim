@@ -20,7 +20,7 @@ Write-Host "Python $version found."
 
 # --- venv + dependencies -----------------------------------------------------
 if (-not (Test-Path ".venv")) {
-    Write-Host "Creating virtual environment…"
+    Write-Host "Creating virtual environment..."
     python -m venv .venv
 }
 & .venv\Scripts\python -m pip install --upgrade pip --quiet
