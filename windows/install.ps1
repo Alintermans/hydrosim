@@ -13,7 +13,7 @@ Write-Host "== HydroSim install ==" -ForegroundColor Cyan
 # --- Python ------------------------------------------------------------------
 $py = Get-Command python -ErrorAction SilentlyContinue
 if (-not $py) {
-    Write-Error "Python not found. Install Python 3.12+ from https://www.python.org/downloads/ (tick 'Add python.exe to PATH') and re-run."
+    Write-Error "Python not found. Install it with the python-*-amd64.exe on the USB stick (or python.org), tick 'Add python.exe to PATH', then re-run."
 }
 $version = & python -c "import sys; print('{}.{}'.format(*sys.version_info[:2]))"
 Write-Host "Python $version found."
@@ -23,8 +23,17 @@ if (-not (Test-Path ".venv")) {
     Write-Host "Creating virtual environment..."
     python -m venv .venv
 }
-& .venv\Scripts\python -m pip install --upgrade pip --quiet
-& .venv\Scripts\python -m pip install -r requirements.txt --quiet
+# offline\wheels holds every package for Windows (Python 3.10-3.14), so the
+# sim PC needs no internet. Without that folder, fall back to PyPI.
+$wheels = Join-Path $root "offline\wheels"
+if (Test-Path $wheels) {
+    Write-Host "Installing packages from offline\wheels (no internet needed)..."
+    & .venv\Scripts\python -m pip install --no-index --find-links $wheels -r requirements.txt --quiet
+} else {
+    & .venv\Scripts\python -m pip install --upgrade pip --quiet
+    & .venv\Scripts\python -m pip install -r requirements.txt --quiet
+}
+if ($LASTEXITCODE -ne 0) { Write-Error "Installing the Python packages failed (see above)." }
 Write-Host "Dependencies installed."
 
 # --- helpers -----------------------------------------------------------------

@@ -1,6 +1,6 @@
 # FTI — onbemande expo-stand
 
-Drie weken, geen internet, niemand aan de stand. Een bezoeker drukt op een
+Drie weken, geen internet, niemand aan de stand. Ook de installatie werkt zonder internet: alle Python-pakketten (`offline\wheels`) en lettertypes zitten in de map. Een bezoeker drukt op een
 knop op het stuur, rijdt **één ronde Spa in de Radical**, typt zijn naam op
 het toetsenbord en ziet meteen op welke plaats hij eindigt.
 
@@ -25,7 +25,7 @@ het toetsenbord en ziet meteen op welke plaats hij eindigt.
 - **Geen internet nodig.** Komt er later internet, dan worden de tijden alsnog
   naar sim.hydroteam.be gestuurd.
 
-## Eenmalig installeren (thuis, mét internet)
+## Eenmalig installeren (geen internet nodig)
 
 0. Zet de map **hydrosim** op het **bureaublad** van de sim-pc (vanaf de USB,
    of `git clone`). Had de pc al een hydrosim-map? Kopieer daaruit `.env` en de

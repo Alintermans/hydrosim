@@ -20,8 +20,13 @@ function Write-Utf8NoBom($Path, $Content) {
     [System.IO.File]::WriteAllText("$PWD\$Path", $Content, $enc)
 }
 
-# --- dependencies (pull a fresh requirements set while we have internet) -----
-& .venv\Scripts\python -m pip install -r requirements.txt --quiet
+# --- dependencies (offline\wheels when present: the sim PC has no internet) --
+$wheels = Join-Path $root "offline\wheels"
+if (Test-Path $wheels) {
+    & .venv\Scripts\python -m pip install --no-index --find-links $wheels -r requirements.txt --quiet
+} else {
+    & .venv\Scripts\python -m pip install -r requirements.txt --quiet
+}
 
 # --- Assetto Corsa -----------------------------------------------------------
 $acDir = $null
@@ -80,7 +85,7 @@ if (-not (Test-Path "autopilot\autopilot.ini")) {
 & .venv\Scripts\python -m flask --app app create-expo --name "FTI 2026" --slug fti-2026 --car $car --track spa --min-lap 100
 if ($LASTEXITCODE -ne 0) { Write-Warning "Could not create the expo event - create it in /admin (kind 'expo')." }
 
-# --- fonts for offline use ---------------------------------------------------
+# --- fonts for offline use (normally already in static\fonts) ---------------------------------------------------
 $fonts = @{
     "montserrat-latin-wght-normal.woff2"     = "https://cdn.jsdelivr.net/npm/@fontsource-variable/montserrat@5/files/montserrat-latin-wght-normal.woff2"
     "montserrat-latin-ext-wght-normal.woff2" = "https://cdn.jsdelivr.net/npm/@fontsource-variable/montserrat@5/files/montserrat-latin-ext-wght-normal.woff2"
@@ -91,7 +96,7 @@ foreach ($f in $fonts.Keys) {
     $dest = "static\fonts\$f"
     if (-not (Test-Path $dest)) {
         try { Invoke-WebRequest -Uri $fonts[$f] -OutFile $dest -UseBasicParsing; Write-Host "font: $f" }
-        catch { Write-Warning "Could not download $f - the screen falls back to Segoe UI." }
+        catch { Write-Warning "Could not download $f (no internet?) - the screen falls back to Segoe UI." }
     }
 }
 

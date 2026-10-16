@@ -11,6 +11,5 @@ collector/collector.ini
 collector/queue.jsonl
 .pytest_cache/
 
-static/fonts/*.woff2
 autopilot/autopilot.ini
 autopilot/.browser-profile/

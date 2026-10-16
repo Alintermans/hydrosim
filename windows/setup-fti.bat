@@ -1,6 +1,6 @@
 @echo off
-rem ONE-CLICK setup of the FTI expo stand. Double-click this file on the sim
-rem PC while it still has internet. It:
+rem ONE-CLICK setup of the FTI expo stand. Works WITHOUT internet (packages
+rem come from offline\wheels, fonts from static\fonts). It:
 rem   1. fetches the FTI version of HydroSim (git branch "fti")
 rem   2. installs Python dependencies (install.ps1, only the first time)
 rem   3. configures the stand (install-fti.ps1): finds Assetto Corsa and the
@@ -15,13 +15,13 @@ where git >nul 2>&1
 if errorlevel 1 (
     echo Git not found - skipping update. Make sure this folder has the "fti" version.
 ) else (
-    git fetch origin
-    git checkout fti
-    git pull --ff-only origin fti
+    rem No internet (the usual case on the sim PC): just use what is here.
+    git fetch origin >nul 2>&1
     if errorlevel 1 (
-        echo.
-        echo Could not update from GitHub. Fix the message above, or continue with what is here.
-        pause
+        echo No internet - installing the version in this folder.
+    ) else (
+        git checkout fti
+        git pull --ff-only origin fti
     )
 )
 
