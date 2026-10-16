@@ -60,7 +60,7 @@ paint(flank & (y >= 0.540) & (y < 0.552), SKY)
 
 # --- 3. rear deck sky, outlined in orange -------------------------------------
 wing = (y > 0.93) & (z < -1.72)
-deck = (ny > 0.55) & (z < -0.45) & (y > 0.6) & ~wing
+deck = (ny > 0.55) & (z < -0.45) & (y > 0.6) & (ax < 0.5) & ~wing
 f_deck = z + 0.45
 paint(deck, SKY)
 paint((ny > 0.55) & (np.abs(f_deck) < 0.012) & (y > 0.6), ORANGE)
@@ -78,16 +78,19 @@ paint(nose & (np.abs(f_chev) < 0.012), ORANGE)
 fpatch = (ny > 0.45) & (z > 0.92) & (z < 1.5) & (ax > 0.52) & (ax < 0.92)
 paint(fpatch, ORANGE)
 
-# --- 5. speed stripes ahead of the rear wheel (the V0 signature) -------------
-lean = 0.55
-t = (z - lean * y)                                       # slanted coordinate
-zone = (np.abs(nx) > 0.3) & (ax > 0.45) & (y > 0.6) & (t > -1.75) & (t < -1.05) & (y > sy + 0.02) & (y < 0.86)
-band = np.floor((t + 1.75) / 0.1).astype(int)
-phase = ((t + 1.75) / 0.1) % 1
-cyc = [ORANGE, BLUE, ORANGE, SKY, ORANGE, BLUE, ORANGE]
-for i, c in enumerate(cyc):
-    paint(zone & (band == i) & (phase > 0.1), c)
-paint(zone & (phase <= 0.1), NAVY)
+# --- 5. speed stripes, as on the real V0: equal orange / deep-blue bars, no
+# gaps, leaning back at the top, running from the rear of the flank (just
+# above the HydroTeam sill) up and over the rear wheel arch.
+DBLUE = rgb('#1352A8')
+K = 0.62                                    # top of a bar sits further back
+t = z + K * (y - 0.3)
+outer = (ax > 0.8) & ((np.abs(nx) > 0.3) | (ny > 0.3)) & (y > 0.245) & ~wing
+BAR, N = 0.074, 8
+T0 = -0.955                                 # front edge, right behind the last logo column
+zone = outer & (t < T0) & (t > T0 - N * BAR) & (z < -0.95) & (z > -1.98)
+idx = np.floor((T0 - t) / BAR).astype(int)
+for i in range(N):
+    paint(zone & (idx == i), ORANGE if i % 2 == 0 else DBLUE)
 
 # --- decals ------------------------------------------------------------------
 def load(n, color=None):
@@ -130,7 +133,7 @@ flag[:, :20, :3] = 0; flag[:, 20:40, :3] = rgb('#FDDA24'); flag[:, 40:, :3] = rg
 side_decal(flag, -0.66, 0.70, 0.075, min_ax=0.45)
 # Partners: every logo gets the SAME optical size -- equal area, capped so
 # very wide or tall marks stay in proportion -- on a tidy grid.
-AREA, MAX_W, MAX_H = 0.0195, 0.205, 0.092
+AREA, MAX_W, MAX_H = 0.0190, 0.195, 0.090
 
 def partner(name, zc, yc, navy=False, min_ax=0.55, max_w=None):
     img = load(name, NAVY if navy else None)
@@ -167,7 +170,7 @@ def partner2(name, zc, yc, keep_colour=False, max_w=None, max_h=None, boost=1.0)
 
 # The flat, vertical flank (y 0.26..0.52, z +0.5..-1.25) is the billboard:
 # 12 partners on a 2 x 6 grid, white on blue (Ford, Vincotte, NRF in colour).
-COLS = [0.33, 0.08, -0.17, -0.42, -0.67, -0.92]
+COLS = [0.33, 0.095, -0.14, -0.375, -0.61, -0.845]
 ROW1 = ['p_agoria', 'p_ford', 'p_fike', 'p_atlas-copco', 'p_air-products', 'p_belden']
 ROW2 = ['p_vincotte', 'p_bindsol', 'p_ocas', 'p_elneo', 'p_nrf', 'p_burke-porter']
 COLOUR = {'p_vincotte', 'p_nrf'}
