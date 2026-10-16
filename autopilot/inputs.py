@@ -77,9 +77,10 @@ class WindowsInputs:
         def proc(n_code, w_param, l_param):
             if n_code == 0:
                 kb = ctypes.cast(l_param, ctypes.POINTER(KBDLLHOOKSTRUCT)).contents
-                if not kb.flags & LLKHF_INJECTED:
-                    # Decide fast (Windows drops slow hooks); translate later.
-                    self._keys.put((kb.vkCode, kb.scanCode, not kb.flags & LLKHF_UP))
+                if kb.flags & LLKHF_INJECTED:  # synthetic (ours): let it through
+                    return user32.CallNextHookEx(None, n_code, w_param, l_param)
+                # Decide fast (Windows drops slow hooks); translate later.
+                self._keys.put((kb.vkCode, kb.scanCode, not kb.flags & LLKHF_UP))
                 if self.locked:
                     return 1  # swallowed: no window ever sees this key
             return user32.CallNextHookEx(None, n_code, w_param, l_param)

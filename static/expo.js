@@ -212,7 +212,7 @@
       case 'starting':
         return '<p class="kicker kicker--heat"><span>Maak je klaar</span></p>' +
           '<h2 class="x-big">Handen aan het <em>stuur</em></h2>' +
-          '<p class="x-sub">De Radical wordt klaargezet op Spa-Francorchamps. ' +
+          '<p class="x-sub">Onze V0 wordt klaargezet op Spa-Francorchamps. ' +
           'Rechterpedaal = gas, middelste pedaal = rem. Schakelen gaat vanzelf.</p>' +
           '<div class="x-bar x-bar--load"><span class="x-bar__fill"></span></div>';
       case 'driving':
@@ -260,8 +260,8 @@
     }
     // idle
     return '<p class="kicker kicker--sky"><span>Sim challenge</span></p>' +
-      '<h2 class="x-big x-pulse">Druk op <span class="x-key">START</span><br>op het stuur</h2>' +
-      '<p class="x-sub">Rij één ronde Spa-Francorchamps in de Radical. ' +
+      '<h2 class="x-big x-pulse">Druk op <span class="x-key x-key--cross">✕</span><br>op het stuur</h2>' +
+      '<p class="x-sub">Rij één ronde Spa-Francorchamps in onze V0. ' +
         'Zet jij de snelste tijd van de dag?</p>' +
       '<div class="x-facts">' + leaderFact() + todayFact() + '</div>';
   }

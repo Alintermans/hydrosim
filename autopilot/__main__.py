@@ -90,14 +90,44 @@ AC_PHASES = ("starting", "driving", "finished")
 
 
 class MainScreenSim:
-    """Wraps the sim: closes the main-monitor page right before AC starts."""
+    """Hands the main monitor over between the HydroTeam page and AC with no
+    Windows desktop in between:
+      start: AC launches BEHIND the page; once AC's window exists it is
+             brought to the front, and only then the page closes.
+      stop:  the page opens first (over AC), then AC is closed."""
+
+    HANDOVER_TIMEOUT = 60
 
     def __init__(self, sim, main: Screen):
         self.sim, self.main = sim, main
+        self._waiting = None
+        self._last_check = 0.0
 
     def start(self) -> None:
-        self.main.close()
         self.sim.start()
+        self._waiting = time.monotonic()
+
+    def stop(self) -> None:
+        if self.sim.running():
+            self.main.keep_open()
+            time.sleep(3)  # let the page paint before AC disappears
+        self.sim.stop()
+        self._waiting = None
+
+    def poll(self) -> None:
+        if self._waiting is None:
+            return
+        now = time.monotonic()
+        if now - self._last_check < 0.25:
+            return
+        self._last_check = now
+        from autopilot.sim import bring_to_front, find_ac_window
+        hwnd = find_ac_window()
+        if hwnd or now - self._waiting > self.HANDOVER_TIMEOUT:
+            if hwnd:
+                bring_to_front(hwnd)
+            self.main.close()
+            self._waiting = None
 
     def __getattr__(self, name):
         return getattr(self.sim, name)
@@ -135,6 +165,35 @@ def learn(cfg: dict) -> None:
         time.sleep(0.03)
 
 
+def where(cfg_path: Path) -> None:
+    """Record where to click on AC's start menu: the next left click is
+    written to autopilot.ini as [ac] start_click."""
+    import ctypes
+    import re
+    from ctypes import wintypes
+    u = ctypes.windll.user32
+    log("Start nu een rit (knop op het stuur) en klik in Assetto Corsa op het")
+    log("stuur-icoon linksboven. Die klik wordt opgeslagen. (max. 5 minuten)")
+    while u.GetAsyncKeyState(0x01) & 0x8000:
+        time.sleep(0.02)
+    end = time.monotonic() + 300
+    while time.monotonic() < end:
+        if u.GetAsyncKeyState(0x01) & 0x8000:
+            pt = wintypes.POINT()
+            u.GetCursorPos(ctypes.byref(pt))
+            text = cfg_path.read_text(encoding="utf-8-sig")
+            line = f"start_click = {pt.x},{pt.y}"
+            if re.search(r"(?m)^start_click\s*=.*$", text):
+                text = re.sub(r"(?m)^start_click\s*=.*$", line, text)
+            else:
+                text = re.sub(r"(?m)^(session\s*=.*)$", r"\1\n" + line, text, count=1)
+            cfg_path.write_text(text, encoding="utf-8")
+            log(f"opgeslagen: {line}  — herstart de stand (STOP-STAND, START-STAND)")
+            return
+        time.sleep(0.02)
+    log("geen klik gezien — niets veranderd")
+
+
 # ------------------------------------------------------------------- main --
 
 def main() -> None:
@@ -142,6 +201,8 @@ def main() -> None:
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--demo", action="store_true", help="no AC, console as input")
     parser.add_argument("--learn", action="store_true", help="show button/key numbers")
+    parser.add_argument("--where", action="store_true",
+                        help="record the click on AC's start menu into autopilot.ini")
     parser.add_argument("--config", type=Path, default=HERE / "autopilot.ini")
     args = parser.parse_args()
 
@@ -150,6 +211,12 @@ def main() -> None:
                  "Copy autopilot.example.ini to autopilot.ini (or run windows\\install-fti.ps1).")
     cfg = config.load(args.config)
     windows = sys.platform == "win32"
+
+    if args.where:
+        if not windows:
+            sys.exit("--where records a Windows mouse click.")
+        where(args.config)
+        return
 
     if args.learn:
         if not windows:
@@ -198,10 +265,12 @@ def main() -> None:
     try:
         while True:
             pilot.tick()
+            if main:
+                sim.poll()
             if time.monotonic() - last_screen > 1:
                 if screen:
                     screen.keep_open()
-                if main and pilot.phase not in AC_PHASES:
+                if main and pilot.phase not in AC_PHASES and sim._waiting is None:
                     main.keep_open()
                 last_screen = time.monotonic()
             time.sleep(0.05)

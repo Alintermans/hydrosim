@@ -17,8 +17,8 @@
       <img src="{{ url_for('static', filename='assets/tick-sky.svg') }}" alt="">
       <span>Sim challenge · Spa-Francorchamps</span>
     </p>
-    <h1 id="xm-msg" class="xm__msg">Druk op <span class="x-key">START</span> op het stuur</h1>
-    <p id="xm-sub" class="xm__sub">Eén ronde in de Radical. Je tijd en je plaats verschijnen op het scherm hiernaast.</p>
+    <h1 id="xm-msg" class="xm__msg">Druk op <span class="x-key x-key--cross">✕</span> op het stuur</h1>
+    <p id="xm-sub" class="xm__sub">Eén ronde in onze V0. Je tijd en je plaats verschijnen op het scherm hiernaast.</p>
   </div>
   <footer class="xm__foot">HydroTeam KU Leuven · Racen op waterstof</footer>
 </div>
@@ -27,8 +27,8 @@
   (function () {
     var msg = document.getElementById('xm-msg'), sub = document.getElementById('xm-sub');
     var TEXT = {
-      idle: ['Druk op <span class="x-key">START</span> op het stuur',
-             'Eén ronde in de Radical. Je tijd en je plaats verschijnen op het scherm hiernaast.'],
+      idle: ['Druk op <span class="x-key x-key--cross">✕</span> op het stuur',
+             'Eén ronde in onze V0. Je tijd en je plaats verschijnen op het scherm hiernaast.'],
       starting: ['Maak je <em>klaar</em>…', 'De wagen wordt klaargezet.'],
       naming: ['Typ je <em>naam</em>', 'Kijk naar het scherm hiernaast en druk op ENTER.'],
       result: ['Goed <em>gereden</em>!', 'Je plaats staat op het scherm hiernaast.'],

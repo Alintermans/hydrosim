@@ -49,6 +49,7 @@ def load(path: Path) -> dict:
         "session": s("ac", "session", "hotlap").lower(),
         "start_click": _xy(s("ac", "start_click")),
         "start_click_delay": i("ac", "start_click_delay", 3),
+        "start_click_tries": i("ac", "start_click_tries", 1),
 
         "assists": {
             "auto_shifter": i("assists", "auto_shifter", 1),

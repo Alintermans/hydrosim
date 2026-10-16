@@ -102,15 +102,21 @@ class Pilot:
                     self.typed = ""
                     self._admin_toggle()
                     continue
-                if self.inputs.locked and self.phase == "naming" \
+                if self._typing() and self.phase == "naming" \
                         and len(self.name) < NAME_MAX:
                     if ev[1] != " " or (self.name and not self.name.endswith(" ")):
                         self.name += ev[1]
-            elif kind == "backspace" and self.phase == "naming" and self.inputs.locked:
+            elif kind == "backspace" and self.phase == "naming" and self._typing():
                 self.name = self.name[:-1]
-            elif kind == "enter" and self.phase == "naming" and self.inputs.locked:
+            elif kind == "enter" and self.phase == "naming" and self._typing():
                 self._submit_name()
         return pressed
+
+    def _typing(self) -> bool:
+        """Keys go into the name unless an admin released the keyboard.
+        (With lock = 0 in the config the keyboard is never 'locked', but
+        visitors must still be able to type their name.)"""
+        return self.inputs.locked or not self.cfg.get("lock", True)
 
     def _admin_toggle(self) -> None:
         if self.inputs.locked:

@@ -271,7 +271,7 @@ class RealSim:
         with AUTOSPAWN: click the configured 'drive' spot, a few times, only
         while the car hasn't moved yet. Off when [ac] start_click is empty."""
         spot = self.cfg.get("start_click")
-        if not spot or self._clicks >= 3 or speed > 2:
+        if not spot or self._clicks >= self.cfg.get("start_click_tries", 1) or speed > 2:
             return
         if self._live_at is None:
             self._live_at = now
@@ -292,6 +292,51 @@ def _allow_foreground() -> None:
         pass
 
 
+def find_ac_window(exe: str = "acs.exe"):
+    """Handle of Assetto Corsa's visible main window, or None."""
+    import ctypes
+    from ctypes import wintypes
+    u, k = ctypes.windll.user32, ctypes.windll.kernel32
+    found = []
+
+    def check(hwnd, _):
+        if not u.IsWindowVisible(hwnd):
+            return True
+        rect = wintypes.RECT()
+        u.GetWindowRect(hwnd, ctypes.byref(rect))
+        if rect.right - rect.left < 640:
+            return True
+        pid = wintypes.DWORD()
+        u.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
+        h = k.OpenProcess(0x1000, False, pid.value)  # QUERY_LIMITED_INFORMATION
+        if h:
+            buf = ctypes.create_unicode_buffer(512)
+            size = wintypes.DWORD(512)
+            if k.QueryFullProcessImageNameW(h, 0, buf, ctypes.byref(size)):
+                if buf.value.lower().endswith("\\" + exe):
+                    found.append(hwnd)
+            k.CloseHandle(h)
+        return not found
+
+    proc = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)(check)
+    u.EnumWindows(proc, 0)
+    return found[0] if found else None
+
+
+def bring_to_front(hwnd) -> None:
+    """Give AC the foreground. Windows only lets the foreground app hand
+    focus over; a synthetic Alt tap lifts that lock (the keyboard hook lets
+    our own synthetic keys through)."""
+    import ctypes
+    u = ctypes.windll.user32
+    u.keybd_event(0x12, 0, 0, 0)        # Alt down
+    u.keybd_event(0x12, 0, 0x0002, 0)   # Alt up
+    if u.IsIconic(hwnd):
+        u.ShowWindow(hwnd, 9)           # SW_RESTORE
+    u.SetForegroundWindow(hwnd)
+    u.SwitchToThisWindow(hwnd, True)
+
+
 def click(x: int, y: int) -> None:
     """A real left mouse click at screen pixel (x, y) — works without a
     mouse attached."""
@@ -301,6 +346,9 @@ def click(x: int, y: int) -> None:
     u.mouse_event(0x0002, 0, 0, 0, 0)  # left down
     time.sleep(0.05)
     u.mouse_event(0x0004, 0, 0, 0, 0)  # left up
+    time.sleep(0.05)
+    # park the pointer mid-screen, away from AC's side bars
+    u.SetCursorPos(u.GetSystemMetrics(0) // 2, u.GetSystemMetrics(1) // 2)
 
 
 class DemoSim:

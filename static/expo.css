@@ -227,3 +227,9 @@ h2 { margin: 0; font-family: var(--font-heading); font-weight: var(--weight-bold
 .xm__sub { margin: 0; font-size: clamp(16px, 1.46vw, 28px); color: var(--ink-200); max-width: 40em; }
 .xm__foot { font-size: clamp(11px, 0.73vw, 14px); letter-spacing: 0.12em;
   text-transform: uppercase; color: var(--ink-400); }
+
+/* the wheel's cross button (PlayStation ✕), drawn round like on the rim */
+.x-key--cross { display: inline-grid; place-items: center; width: 1.15em; height: 1.15em;
+  padding: 0; border-radius: 50%; background: var(--ht-white); color: var(--blue-900);
+  box-shadow: 0 0.1em 0 var(--ink-300); font-size: 0.9em; line-height: 1;
+  vertical-align: 0.04em; }

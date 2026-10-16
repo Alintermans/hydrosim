@@ -224,3 +224,15 @@ def test_runup_lap_after_crossing_is_ignored():
     server.laps.append(lap(at=crossed + timedelta(minutes=2, seconds=20), cid="real"))
     step(pilot, clock, 1.1)
     assert pilot.phase == "finished" and pilot.lap["client_id"] == "real"
+
+
+def test_name_typing_works_with_lock_off_in_config():
+    clock, server, sim, inputs = Clock(), FakeServer(), FakeSim(), FakeInputs()
+    inputs.locked = False  # lock = 0: the hook passes keys through
+    pilot = Pilot(dict(CFG, lock=False), server, sim, inputs, clock=clock,
+                  wall=lambda: T0, log=lambda m: None)
+    drive_to_naming(pilot, clock, server, sim, inputs)
+    inputs.type("Mila")
+    inputs.queue.append(("enter",))
+    step(pilot, clock)
+    assert server.assigned == {"L1": "Mila"}
