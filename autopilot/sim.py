@@ -307,19 +307,24 @@ class RealSim:
         with AUTOSPAWN: click the configured 'drive' spot, a few times, only
         while the car hasn't moved yet. Off when [ac] start_click is empty."""
         spot = self.cfg.get("start_click")
-        if not spot or self._clicks >= self.cfg.get("start_click_tries", 1) or speed > 2:
+        started = bool(self._lap and self._lap.get("started"))
+        if not spot or self._clicks >= self.cfg.get("start_click_tries", 3) \
+                or speed > 1 or started:
             return
         if self._live_at is None:
             self._live_at = now
-        if now - self._live_at < self.cfg.get("start_click_delay", 3) + 4 * self._clicks:
+        if now - self._live_at < self.cfg.get("start_click_delay", 3) + 3 * self._clicks:
             return
         self._clicks += 1
         hwnd = find_ac_window()
         if hwnd:  # the click must land on AC, not on whatever is in front
             bring_to_front(hwnd)
             time.sleep(0.3)
-        click(*spot)
-        self.log(f"clicked the AC start menu at {spot} (try {self._clicks})")
+        else:
+            self.log("AC window not found for the start-menu click")
+        click(*spot, hwnd=hwnd)
+        self.log(f"clicked the AC start menu at {spot} (try {self._clicks}, "
+                 f"window {'found' if hwnd else 'missing'})")
 
 
 def _allow_foreground() -> None:
@@ -381,20 +386,49 @@ def bring_to_front(hwnd) -> None:
     u.SwitchToThisWindow(hwnd, True)
 
 
-def click(x: int, y: int) -> None:
-    """A real left mouse click at screen pixel (x, y) — works without a
-    mouse attached."""
+def click(x: int, y: int, hwnd=None) -> None:
+    """A left mouse click at screen pixel (x, y), robust without a mouse
+    plugged in: absolute SendInput moves + clicks, and the same click is also
+    posted to AC's window as window messages."""
     import ctypes
+    from ctypes import wintypes
     u = ctypes.windll.user32
-    # Hover first (menus react to the pointer arriving), then a slow click.
-    u.SetCursorPos(int(x) + 3, int(y) + 3)
-    time.sleep(0.15)
-    u.SetCursorPos(int(x), int(y))
-    u.mouse_event(0x0001, 0, 0, 0, 0)  # a real move event at the spot
-    time.sleep(0.15)
-    u.mouse_event(0x0002, 0, 0, 0, 0)  # left down
-    time.sleep(0.1)
-    u.mouse_event(0x0004, 0, 0, 0, 0)  # left up
+
+    class MOUSEINPUT(ctypes.Structure):
+        _fields_ = [("dx", wintypes.LONG), ("dy", wintypes.LONG), ("mouseData", wintypes.DWORD),
+                    ("dwFlags", wintypes.DWORD), ("time", wintypes.DWORD),
+                    ("dwExtraInfo", ctypes.c_size_t)]
+
+    class INPUT(ctypes.Structure):
+        class _U(ctypes.Union):
+            _fields_ = [("mi", MOUSEINPUT), ("pad", ctypes.c_byte * 32)]
+        _anonymous_ = ("u",)
+        _fields_ = [("type", wintypes.DWORD), ("u", _U)]
+
+    # virtual-desktop coordinates normalised to 0..65535 (multi-monitor safe)
+    vx, vy = u.GetSystemMetrics(76), u.GetSystemMetrics(77)
+    vw, vh = max(1, u.GetSystemMetrics(78)), max(1, u.GetSystemMetrics(79))
+
+    def send(flags, px=None, py=None):
+        i = INPUT(type=0)
+        if px is not None:
+            i.mi.dx = int((px - vx) * 65535 / (vw - 1))
+            i.mi.dy = int((py - vy) * 65535 / (vh - 1))
+            flags |= 0x8000 | 0x4000 | 0x0001   # ABSOLUTE | VIRTUALDESK | MOVE
+        i.mi.dwFlags = flags
+        u.SendInput(1, ctypes.byref(i), ctypes.sizeof(i))
+
+    send(0, x + 4, y + 4); time.sleep(0.12)   # hover first: menus react to it
+    send(0, x, y); time.sleep(0.15)
+    send(0x0002); time.sleep(0.1)             # left down
+    send(0x0004); time.sleep(0.1)             # left up
+    if hwnd:  # belt and braces: the same click as window messages
+        pt = wintypes.POINT(int(x), int(y))
+        u.ScreenToClient(hwnd, ctypes.byref(pt))
+        lp = (pt.y << 16) | (pt.x & 0xFFFF)
+        u.PostMessageW(hwnd, 0x0200, 0, lp)      # WM_MOUSEMOVE
+        u.PostMessageW(hwnd, 0x0201, 1, lp)      # WM_LBUTTONDOWN
+        u.PostMessageW(hwnd, 0x0202, 0, lp)      # WM_LBUTTONUP
     time.sleep(0.05)
     # park the pointer mid-screen, away from AC's side bars
     u.SetCursorPos(u.GetSystemMetrics(0) // 2, u.GetSystemMetrics(1) // 2)
