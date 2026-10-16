@@ -278,6 +278,10 @@ class RealSim:
         if now - self._live_at < self.cfg.get("start_click_delay", 3) + 4 * self._clicks:
             return
         self._clicks += 1
+        hwnd = find_ac_window()
+        if hwnd:  # the click must land on AC, not on whatever is in front
+            bring_to_front(hwnd)
+            time.sleep(0.3)
         click(*spot)
         self.log(f"clicked the AC start menu at {spot} (try {self._clicks})")
 
@@ -292,8 +296,9 @@ def _allow_foreground() -> None:
         pass
 
 
-def find_ac_window(exe: str = "acs.exe"):
-    """Handle of Assetto Corsa's visible main window, or None."""
+def find_ac_window(exe: str = "acs.exe", point=None):
+    """Handle of a visible, large top-level window of `exe` (default:
+    Assetto Corsa), optionally one that covers screen `point`, or None."""
     import ctypes
     from ctypes import wintypes
     u, k = ctypes.windll.user32, ctypes.windll.kernel32
@@ -305,6 +310,9 @@ def find_ac_window(exe: str = "acs.exe"):
         rect = wintypes.RECT()
         u.GetWindowRect(hwnd, ctypes.byref(rect))
         if rect.right - rect.left < 640:
+            return True
+        if point and not (rect.left <= point[0] < rect.right
+                          and rect.top <= point[1] < rect.bottom):
             return True
         pid = wintypes.DWORD()
         u.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
@@ -342,9 +350,14 @@ def click(x: int, y: int) -> None:
     mouse attached."""
     import ctypes
     u = ctypes.windll.user32
+    # Hover first (menus react to the pointer arriving), then a slow click.
+    u.SetCursorPos(int(x) + 3, int(y) + 3)
+    time.sleep(0.15)
     u.SetCursorPos(int(x), int(y))
+    u.mouse_event(0x0001, 0, 0, 0, 0)  # a real move event at the spot
+    time.sleep(0.15)
     u.mouse_event(0x0002, 0, 0, 0, 0)  # left down
-    time.sleep(0.05)
+    time.sleep(0.1)
     u.mouse_event(0x0004, 0, 0, 0, 0)  # left up
     time.sleep(0.05)
     # park the pointer mid-screen, away from AC's side bars

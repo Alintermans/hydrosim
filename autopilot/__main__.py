@@ -92,27 +92,44 @@ AC_PHASES = ("starting", "driving", "finished")
 class MainScreenSim:
     """Hands the main monitor over between the HydroTeam page and AC with no
     Windows desktop in between:
-      start: AC launches BEHIND the page; once AC's window exists it is
-             brought to the front, and only then the page closes.
-      stop:  the page opens first (over AC), then AC is closed."""
+      start: AC launches while the page stays up; as soon as AC has a window
+             it is pulled in front, and the page only closes once AC is
+             fully loaded (live), after which AC is pulled in front again.
+      stop:  the page opens first and we wait until it is really on screen;
+             only then AC is closed."""
 
-    HANDOVER_TIMEOUT = 60
+    HANDOVER_TIMEOUT = 90
 
     def __init__(self, sim, main: Screen):
         self.sim, self.main = sim, main
         self._waiting = None
+        self._fronted = False
         self._last_check = 0.0
 
     def start(self) -> None:
         self.sim.start()
-        self._waiting = time.monotonic()
+        self._waiting, self._fronted = time.monotonic(), False
 
     def stop(self) -> None:
+        from autopilot.sim import find_ac_window
         if self.sim.running():
             self.main.keep_open()
-            time.sleep(3)  # let the page paint before AC disappears
+            x, y = self.cfg_main_point()
+            deadline = time.monotonic() + 10
+            while time.monotonic() < deadline:
+                if find_ac_window("msedge.exe", (x, y)) or \
+                        find_ac_window("chrome.exe", (x, y)):
+                    break
+                time.sleep(0.2)
+            else:
+                log("main screen did not appear within 10 s")
+            time.sleep(1.5)  # let it paint
         self.sim.stop()
         self._waiting = None
+
+    def cfg_main_point(self):
+        x, y = self.main.position
+        return x + 20, y + 20
 
     def poll(self) -> None:
         if self._waiting is None:
@@ -123,10 +140,19 @@ class MainScreenSim:
         self._last_check = now
         from autopilot.sim import bring_to_front, find_ac_window
         hwnd = find_ac_window()
-        if hwnd or now - self._waiting > self.HANDOVER_TIMEOUT:
-            if hwnd:
-                bring_to_front(hwnd)
+        if hwnd and not self._fronted:
+            log("AC window is there — bringing it to the front")
+            bring_to_front(hwnd)
+            self._fronted = True
+        tel = self.sim.telemetry() or {}
+        if tel.get("live") or now - self._waiting > self.HANDOVER_TIMEOUT:
             self.main.close()
+            hwnd = find_ac_window()
+            if hwnd:
+                time.sleep(0.3)
+                bring_to_front(hwnd)
+            log("AC loaded — HydroTeam screen closed" if tel.get("live")
+                else "AC not live after 90 s — HydroTeam screen closed anyway")
             self._waiting = None
 
     def __getattr__(self, name):
@@ -257,6 +283,11 @@ def main() -> None:
                 sim = MainScreenSim(sim, main)
         keep_awake()
 
+    if not args.demo and not cfg["start_click"]:
+        log("NOTE: [ac] start_click is empty — if AC opens on its start menu, "
+            "run AC-KLIK-INSTELLEN once")
+    elif cfg["start_click"]:
+        log(f"will click AC's start menu at {cfg['start_click']}")
     pilot = Pilot(cfg, server, sim, inputs, log=log)
     log(f"autopilot ready — {cfg['car'] or 'demo car'} @ {cfg['track']}, "
         f"session {cfg['session']}")
