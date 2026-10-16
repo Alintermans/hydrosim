@@ -118,23 +118,32 @@ side_decal(load('num56w'), 0.02, 0.60, 0.50)                     # 56 on the doo
 flag = np.zeros((40, 60, 4), np.float32); flag[..., 3] = 1
 flag[:, :20, :3] = 0; flag[:, 20:40, :3] = rgb('#FDDA24'); flag[:, 40:, :3] = rgb('#EF3340')
 side_decal(flag, 0.40, 0.69, 0.11)
-# Partners, grouped and big: the flanks are what visitors at the stand see.
-# Front fender, behind the wheel (blue): the main partners, white.
-side_decal(load('p_agoria'), 0.60, 0.585, 0.46, min_ax=0.5)
-side_decal(load('p_belden'), 0.60, 0.475, 0.36, min_ax=0.5)
-side_decal(load('p_domec'), 0.60, 0.385, 0.36, min_ax=0.5)
-side_decal(load('p_vincotte'), -0.36, 0.665, 0.085)
-# Door, under the number: a row of three, white.
-side_decal(load('p_fike'), 0.27, 0.355, 0.20)
-side_decal(load('p_phoenix-contact'), 0.00, 0.355, 0.27)
-side_decal(load('p_airtech'), -0.29, 0.36, 0.25)
-# Rear haunch (sky): navy.
-navy_ = lambda n: load(n, NAVY)
-side_decal(navy_('p_van-mossel'), -0.86, 0.345, 0.34)
-side_decal(navy_('p_atlas-copco'), -0.86, 0.275, 0.26)
-# Sky band ahead of / behind the HydroTeam wordmark: navy.
-side_decal(navy_('p_thrustmaster'), 0.66, 0.215, 0.30, min_ax=0.5)
-side_decal(navy_('p_elneo'), -0.68, 0.215, 0.16)
+# Partners: every logo gets the SAME optical size -- equal area, capped so
+# very wide or tall marks stay in proportion -- on a tidy grid.
+AREA, MAX_W, MAX_H = 0.0150, 0.34, 0.10
+
+def partner(name, zc, yc, navy=False, min_ax=0.55):
+    img = load(name, NAVY if navy else None)
+    if name != 'p_vincotte':  # light-grey parts of a logo become solid too
+        img[..., 3] = np.clip(img[..., 3] * 1.8, 0, 1)
+    aspect = img.shape[1] / img.shape[0]
+    w = (AREA * aspect) ** 0.5
+    w = min(w, MAX_W, MAX_H * aspect)
+    side_decal(img, zc, yc, w, min_ax=min_ax)
+
+# front fender, behind the wheel (blue): a stack of three
+for i, n in enumerate(['p_agoria', 'p_belden', 'p_domec']):
+    partner(n, 0.61, 0.585 - i * 0.098, min_ax=0.5)
+# door, under the number: a row of four
+for zc, n in [(0.29, 'p_fike'), (0.03, 'p_phoenix-contact'), (-0.24, 'p_airtech'), (-0.51, 'p_atlas-copco')]:
+    partner(n, zc, 0.36)
+# behind the number
+partner('p_vincotte', -0.36, 0.665)
+# rear haunch (sky)
+partner('p_van-mossel', -0.90, 0.33, navy=True)
+# sky band, either side of the HydroTeam wordmark
+partner('p_thrustmaster', 0.66, 0.215, navy=True, min_ax=0.5)
+partner('p_elneo', -0.66, 0.215, navy=True)
 top_decal(load('ht_mark', W), 0.0, 1.78, 0.42, ymin=0.3)        # nose
 top_decal(load('kul'), 0.0, 1.35, 0.46)                         # hood
 top_decal(load('num56w'), 0.0, -0.25, 0.40, ymin=1.0)           # roof, for the TV camera
