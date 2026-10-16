@@ -236,3 +236,32 @@ def test_name_typing_works_with_lock_off_in_config():
     inputs.queue.append(("enter",))
     step(pilot, clock)
     assert server.assigned == {"L1": "Mila"}
+
+
+def test_crossing_the_line_stops_at_once_then_waits_for_the_lap():
+    pilot, clock, server, sim, inputs = make()
+    inputs.queue.append(("button",))
+    step(pilot, clock)
+    sim.live = True
+    step(pilot, clock)
+    sim.telemetry = lambda: {"live": True, "speed": 200, "started": True,
+                             "finished": True, "progress": 0.0, "elapsed_ms": 0}
+    step(pilot, clock)
+    assert pilot.phase == "finished" and not sim.on and pilot.lap is None
+    server.laps.append(lap())
+    step(pilot, clock, 1.1)
+    assert pilot.lap["client_id"] == "L1"
+    step(pilot, clock, 5)
+    assert pilot.phase == "naming"
+
+
+def test_finish_without_valid_lap_says_so():
+    pilot, clock, server, sim, inputs = make()
+    inputs.queue.append(("button",))
+    step(pilot, clock)
+    sim.live = True
+    step(pilot, clock)
+    sim.telemetry = lambda: {"live": True, "speed": 200, "started": True, "finished": True}
+    step(pilot, clock)
+    step(pilot, clock, 1, n=16)
+    assert pilot.phase == "message"

@@ -203,7 +203,10 @@ class RealSim:
         self.stop()
         self._write("race.ini", race_ini(self.cfg, self._skin()))
         self._write("assists.ini", assists_ini(self.cfg))
-        self._packet, self._packet_seen = None, 0.0
+        # The shared memory still holds the LAST frame of the previous run
+        # (status 'live'!). Remember that frame's packet id: only a packet id
+        # that differs from it proves the NEW session is running.
+        self._packet, self._packet_seen = "unset", 0.0
         self._lap = None          # lap-start detection, see telemetry()
         self._clicks, self._live_at = 0, None
         _allow_foreground()
@@ -240,7 +243,9 @@ class RealSim:
             self._sm = SharedMemory()
         g = self._sm.graphics.read()
         now = time.monotonic()
-        if g.packetId != self._packet:
+        if self._packet == "unset":
+            self._packet = g.packetId           # stale frame of the last run
+        elif g.packetId != self._packet:
             self._packet, self._packet_seen = g.packetId, now
         ticking = now - self._packet_seen < 2.0 and self._packet_seen > 0
         if not (ticking and g.status == AC_LIVE):
@@ -254,15 +259,18 @@ class RealSim:
         # line: the lap counter goes up, or the current-lap clock resets.
         laps, cur = int(g.completedLaps), int(g.iCurrentTime)
         if self._lap is None:
-            self._lap = {"base": laps, "prev": cur, "started": False}
+            self._lap = {"base": laps, "prev": cur, "started": False, "laps0": None}
         st = self._lap
         if not st["started"] and (laps > st["base"] or cur + 1000 < st["prev"]):
-            st["started"] = True
+            st["started"], st["laps0"] = True, laps
         st["prev"] = cur
         if not st["started"]:
             return {"live": True, "speed": speed, "progress": None,
                     "elapsed_ms": None, "started": False}
+        # Over the line again = the visitor's one lap is done: stop at once,
+        # don't wait for the server to have the lap.
         return {"live": True, "speed": speed, "started": True,
+                "finished": laps > st["laps0"],
                 "progress": float(g.normalizedCarPosition),
                 "elapsed_ms": max(0, cur)}
 

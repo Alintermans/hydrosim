@@ -212,17 +212,19 @@
       case 'starting':
         return '<p class="kicker kicker--heat"><span>Maak je klaar</span></p>' +
           '<h2 class="x-big">Handen aan het <em>stuur</em></h2>' +
-          '<p class="x-sub">Onze V0 wordt klaargezet op Spa-Francorchamps. ' +
+          '<p class="x-sub">Onze V0 wordt klaargezet op Spa-Francorchamps. Je rijdt <b>één ronde</b>: ' +
+          'de tijd start aan de streep en na de finish stopt de rit vanzelf. ' +
           'Rechterpedaal = gas, middelste pedaal = rem. Schakelen gaat vanzelf.</p>' +
           '<div class="x-bar x-bar--load"><span class="x-bar__fill"></span></div>';
       case 'driving':
         if (st.elapsed_ms == null) {
           return '<p class="kicker kicker--heat"><span>Op de baan</span></p>' +
             '<h2 class="x-big">Rij naar de <em>startlijn</em></h2>' +
-            '<p class="x-sub">De tijd begint te lopen zodra je over de streep rijdt. Gas geven!</p>' +
+            '<p class="x-sub">Je rijdt <b>één ronde</b>. De tijd start zodra je over de streep rijdt; ' +
+              'kom je er weer over, dan is het gedaan. Gas geven!</p>' +
             '<div class="x-facts">' + leaderFact() + '</div>';
         }
-        return '<p class="kicker kicker--heat"><span>Op de baan · 1 ronde</span></p>' +
+        return '<p class="kicker kicker--heat"><span>Eén ronde · na de finish stopt de rit</span></p>' +
           '<div id="x-clock" class="x-clock">' + fmtClock(st.elapsed_ms || 0) + '</div>' +
           '<div class="x-bar"><span class="x-bar__fill" style="width:' +
             Math.round((st.progress || 0) * 100) + '%"></span></div>' +

@@ -202,8 +202,10 @@ class Pilot:
             self.progress = tel.get("progress")
             self.elapsed_ms = tel.get("elapsed_ms")
             lap = self._find_lap()
-            if lap:
+            if lap or tel.get("finished"):
+                # One lap only: the session ends the moment they cross the line.
                 self.lap = lap
+                self.sim.stop()
                 self._goto("finished")
             elif not self.sim.running():
                 self._goto("message", message="De rit is gestopt")
@@ -218,8 +220,11 @@ class Pilot:
                     self.idle_since = None
 
         elif self.phase == "finished":
-            if t >= cfg["finish_hold"]:
-                self.sim.stop()
+            if self.lap is None:  # crossed the line; the lap is on its way
+                self.lap = self._find_lap()
+                if self.lap is None and t > 15:
+                    self._goto("message", message="Deze ronde telt niet")
+            elif t >= cfg["finish_hold"]:
                 if self.lap.get("driver_name"):
                     self.name = self.lap["driver_name"]
                     self._goto("result")
