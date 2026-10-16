@@ -265,3 +265,19 @@ def test_finish_without_valid_lap_says_so():
     step(pilot, clock)
     step(pilot, clock, 1, n=16)
     assert pilot.phase == "message"
+
+
+def test_shipped_livery_is_installed_and_preferred(tmp_path, monkeypatch):
+    import autopilot.sim as sim_mod
+    ours = tmp_path / "ours" / "gtp_radical_rxc_gt3" / "hydroteam_v0"
+    ours.mkdir(parents=True)
+    (ours / "body.dds").write_bytes(b"DDS livery")
+    ac = tmp_path / "ac"
+    skins = ac / "content" / "cars" / "gtp_radical_rxc_gt3" / "skins"
+    (skins / "00_Skittles").mkdir(parents=True)
+    monkeypatch.setattr(sim_mod, "SKINS", tmp_path / "ours")
+    cfg = dict(CFG, car="gtp_radical_rxc_gt3", skin="", ac_dir=str(ac), cfg_dir=str(tmp_path))
+    real = sim_mod.RealSim(cfg, log=lambda m: None)
+    assert real.install_skins() == ["hydroteam_v0"]
+    assert (skins / "hydroteam_v0" / "body.dds").read_bytes() == b"DDS livery"
+    assert real._skin() == "hydroteam_v0"

@@ -273,6 +273,12 @@ def main() -> None:
         problems = sim.check()
         if problems:
             sys.exit("Assetto Corsa setup problems:\n  - " + "\n  - ".join(problems))
+        try:
+            skins = sim.install_skins()
+            if skins:
+                log("livery installed in AC: " + ", ".join(skins))
+        except OSError as exc:
+            log(f"could not install the livery ({exc}) — AC uses its own skin")
         sim.stop()  # a leftover AC from before a restart
         inputs = WindowsInputs(cfg, log=log)
         screen = main = None

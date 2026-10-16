@@ -18,6 +18,10 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
+# Liveries shipped with HydroSim: skins/<car folder>/<skin folder>. Installed
+# into AC's car folder automatically and used when [ac] skin is empty.
+SKINS = Path(__file__).resolve().parent / "skins"
+
 SESSION_TYPES = {  # race.ini SESSION_0 TYPE / spawn set per session kind
     "practice": (1, "PIT"),
     "race": (3, "START"),
@@ -183,9 +187,33 @@ class RealSim:
             problems.append(f"AC config folder {self.cfg_dir} missing — start AC once by hand")
         return problems
 
+    def install_skins(self) -> list[str]:
+        """Copy our liveries for this car into AC (new or changed files only)."""
+        import shutil
+        ours = SKINS / self.cfg["car"]
+        target = self.ac_dir / "content" / "cars" / self.cfg["car"] / "skins"
+        if not ours.is_dir() or not target.is_dir():
+            return []
+        installed = []
+        for skin in sorted(p for p in ours.iterdir() if p.is_dir()):
+            dst = target / skin.name
+            dst.mkdir(exist_ok=True)
+            for f in skin.iterdir():
+                d = dst / f.name
+                if not d.exists() or d.stat().st_size != f.stat().st_size \
+                        or d.stat().st_mtime < f.stat().st_mtime:
+                    shutil.copy2(f, d)
+            installed.append(skin.name)
+        return installed
+
     def _skin(self) -> str:
         if self.cfg["skin"]:
             return self.cfg["skin"]
+        ours = SKINS / self.cfg["car"]
+        if ours.is_dir():  # our own livery first (HydroTeam V0)
+            names = sorted(p.name for p in ours.iterdir() if p.is_dir())
+            if names:
+                return names[0]
         skins = self.ac_dir / "content" / "cars" / self.cfg["car"] / "skins"
         try:
             return sorted(p.name for p in skins.iterdir() if p.is_dir())[0]
