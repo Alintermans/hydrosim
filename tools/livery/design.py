@@ -113,7 +113,7 @@ def top_decal(img, xc, zc, width, from_front=False, mirror_x=False, ymin=0.3, ym
         stamp(img, sel, u, v)
 
 W = WHITE
-side_decal(load('ht_color'), -0.05, 0.21, 0.95)                  # HydroTeam on the sky band
+side_decal(load('ht_color'), -0.19, 0.21, 0.90)                  # HydroTeam on the sky band
 side_decal(load('num56w'), 0.02, 0.60, 0.50)                     # 56 on the door
 flag = np.zeros((40, 60, 4), np.float32); flag[..., 3] = 1
 flag[:, :20, :3] = 0; flag[:, 20:40, :3] = rgb('#FDDA24'); flag[:, 40:, :3] = rgb('#EF3340')
@@ -122,28 +122,35 @@ side_decal(flag, 0.40, 0.69, 0.11)
 # very wide or tall marks stay in proportion -- on a tidy grid.
 AREA, MAX_W, MAX_H = 0.0150, 0.34, 0.10
 
-def partner(name, zc, yc, navy=False, min_ax=0.55):
+def partner(name, zc, yc, navy=False, min_ax=0.55, max_w=None):
     img = load(name, NAVY if navy else None)
     if name != 'p_vincotte':  # light-grey parts of a logo become solid too
         img[..., 3] = np.clip(img[..., 3] * 1.8, 0, 1)
     aspect = img.shape[1] / img.shape[0]
     w = (AREA * aspect) ** 0.5
-    w = min(w, MAX_W, MAX_H * aspect)
+    w = min(w, max_w or MAX_W, MAX_H * aspect)
     side_decal(img, zc, yc, w, min_ax=min_ax)
 
-# front fender, behind the wheel (blue): a stack of three
-for i, n in enumerate(['p_agoria', 'p_belden', 'p_domec']):
+# MAIN PARTNERS on the flanks (what visitors at the stand see)
+# front fender, behind the wheel: a stack of three
+for i, n in enumerate(['p_agoria', 'p_belden', 'p_fike']):
     partner(n, 0.61, 0.585 - i * 0.098, min_ax=0.5)
 # door, under the number: a row of four
-for zc, n in [(0.29, 'p_fike'), (0.03, 'p_phoenix-contact'), (-0.24, 'p_airtech'), (-0.51, 'p_atlas-copco')]:
+for zc, n in [(0.29, 'p_air-products'), (0.03, 'p_atlas-copco'), (-0.24, 'p_ford'), (-0.51, 'p_ocas')]:
     partner(n, zc, 0.36)
-# behind the number
-partner('p_vincotte', -0.36, 0.665)
-# rear haunch (sky)
-partner('p_van-mossel', -0.90, 0.33, navy=True)
-# sky band, either side of the HydroTeam wordmark
-partner('p_thrustmaster', 0.66, 0.215, navy=True, min_ax=0.5)
-partner('p_elneo', -0.66, 0.215, navy=True)
+partner('p_vincotte', -0.36, 0.665)                       # behind the number
+partner('p_bindsol', 0.44, 0.215, navy=True, min_ax=0.5)  # sky band, front
+partner('p_elneo', -0.82, 0.215, navy=True)               # sky band, rear
+# rear haunch (sky): two slots kept for NRF and Burke Porter
+for zc, yc, n in [(-0.90, 0.355, 'p_nrf'), (-0.90, 0.27, 'p_burke-porter')]:
+    import os
+    if os.path.exists('assets/' + n + '.png'):
+        partner(n, zc, yc, navy=n != 'p_nrf')
+# SUPPORTING PARTNERS on the rear-wing end plates
+for yc, n in [(1.01, 'p_domec'), (0.925, 'p_phoenix-contact')]:
+    partner(n, -1.97, yc, min_ax=0.6)
+partner('p_airtech', -1.92, 0.50, min_ax=0.6, max_w=0.19)          # rear corners, behind the wheel
+partner('p_van-mossel', -1.92, 0.415, navy=True, min_ax=0.6, max_w=0.19)
 top_decal(load('ht_mark', W), 0.0, 1.78, 0.42, ymin=0.3)        # nose
 top_decal(load('kul'), 0.0, 1.35, 0.46)                         # hood
 top_decal(load('num56w'), 0.0, -0.25, 0.40, ymin=1.0)           # roof, for the TV camera
